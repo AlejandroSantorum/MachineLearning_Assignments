@@ -7,6 +7,8 @@ import pandas as pd
 class Datos:
 
     # TODO: procesar el fichero para asignar correctamente las variables nominalAtributos, datos y diccionarios
-    def __init__(self, nombreFichero):       
-        
+    def __init__(self, nombreFichero):
+        pass
+
     def extraeDatos(self,idx):
+        pass
