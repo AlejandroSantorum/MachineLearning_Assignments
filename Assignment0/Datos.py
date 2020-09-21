@@ -1,8 +1,22 @@
+################################################################################
+#   Authors:
+#       · Alejandro Santorum Varela - alejandro.santorum@estudiante.uam.es
+#       · Jose Manuel Chacon Aguilera - josem.chacon@estudiante.uam.es
+#   File: Datos.py
+#   Date: Sept. 21, 2020
+#   Project: Assignment 0 Fundamentals of Machine Learning
+#   File Description: Preliminary treatment of datasets using the class provided
+#       in this file. It reads the data of the given file and stores all the
+#       needed information for further use by machine learning algorithms.
+#
+################################################################################
+
 # -*- coding: utf-8 -*-
 
 # coding: utf-8
 import pandas as pd
 #import numpy as np
+
 
 class Datos:
 
