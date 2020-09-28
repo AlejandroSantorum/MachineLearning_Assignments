@@ -27,13 +27,24 @@ class EstrategiaParticionado(object):
 #####################################################################################################
 
 class ValidacionSimple(EstrategiaParticionado):
-
+    def __init__(self, percentage, nreps=1):
+        self.particiones = [Particion() for i in range(nreps)]
+        self.nreps = nreps
+        self.percentage = percentage
     # Crea particiones segun el metodo tradicional de division de los datos segun el porcentaje deseado y el n�mero de ejecuciones deseado
     # Devuelve una lista de particiones (clase Particion)
     # TODO: implementar
     def creaParticiones(self,datos,seed=None):
         random.seed(seed)
-        pass
+        # First of all, shuffle data and get the number of examples
+        np.random.shuffle(datos)
+        [ndata, _] = datos.shape
+        ntest = int(ndata*self.percentage)
+        for i in range(self.nreps):
+            self.particiones[i].indicesTest = random.sample(range(ndata), ntest)
+            all = np.arrange(ndata)
+            self.particiones[i].indicesTrain = [idx for idx in all if idx not in self.particiones[i].indicesTest]
+
 
 
 #####################################################################################################
