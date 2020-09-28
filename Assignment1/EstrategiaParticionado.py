@@ -1,5 +1,6 @@
 from abc import ABCMeta,abstractmethod
 import numpy as np
+import random
 
 
 class Particion():
@@ -11,8 +12,7 @@ class Particion():
 
 #####################################################################################################
 
-class EstrategiaParticionado:
-
+class EstrategiaParticionado(object):
     # Clase abstracta
     __metaclass__ = ABCMeta
 
@@ -57,4 +57,4 @@ class ValidacionCruzada(EstrategiaParticionado):
         # Filling the partition array
         for i in range(self.k_fold):
             self.particiones[i].indicesTest = np.arange(i*size, (i+1)*size)
-            self.particiones[i].indicesTrain = np.concatenate(np.arange(0, i*size), np.arange((i+1)*size, ndata), axis=None)
+            self.particiones[i].indicesTrain = np.concatenate((np.arange(0, i*size), np.arange((i+1)*size, ndata)), axis=None)
