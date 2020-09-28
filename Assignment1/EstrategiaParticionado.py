@@ -1,4 +1,5 @@
 from abc import ABCMeta,abstractmethod
+import numpy as np
 
 
 class Particion():
@@ -38,10 +39,22 @@ class ValidacionSimple(EstrategiaParticionado):
 #####################################################################################################
 class ValidacionCruzada(EstrategiaParticionado):
 
+    def __init__(self, k_fold):
+        self.particiones = [Particion() for i in range(k_fold)]
+        self.k_fold = k_fold
+
     # Crea particiones segun el metodo de validacion cruzada.
     # El conjunto de entrenamiento se crea con las nfolds-1 particiones y el de test con la particion restante
     # Esta funcion devuelve una lista de particiones (clase Particion)
     # TODO: implementar
     def creaParticiones(self,datos,seed=None):
         random.seed(seed)
-        pass
+        # First of all, shuffle data and get the number of examples
+        np.random.shuffle(datos)
+        [ndata, _] = datos.shape
+        # Size of each fold
+        size = int(ndata/self.k_fold)
+        # Filling the partition array
+        for i in range(self.k_fold):
+            self.particiones[i].indicesTest = np.arange(i*size, (i+1)*size)
+            self.particiones[i].indicesTrain = np.concatenate(np.arange(0, i*size), np.arange((i+1)*size, ndata), axis=None)
