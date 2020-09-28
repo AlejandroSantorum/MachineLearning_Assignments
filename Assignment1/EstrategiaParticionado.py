@@ -39,11 +39,11 @@ class ValidacionSimple(EstrategiaParticionado):
         # First of all, shuffle data and get the number of examples
         np.random.shuffle(datos)
         [ndata, _] = datos.shape
-        ntest = int(ndata*self.percentage)
+        ntrain = int(ndata*self.percentage)
         for i in range(self.nreps):
-            self.particiones[i].indicesTest = random.sample(range(ndata), ntest)
-            all = np.arrange(ndata)
-            self.particiones[i].indicesTrain = [idx for idx in all if idx not in self.particiones[i].indicesTest]
+            self.particiones[i].indicesTrain = random.sample(range(ndata), ntrain)
+            all = np.arange(ndata)
+            self.particiones[i].indicesTest = [idx for idx in all if idx not in self.particiones[i].indicesTrain]
 
 
 
