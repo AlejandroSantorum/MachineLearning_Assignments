@@ -36,8 +36,6 @@ class ValidacionSimple(EstrategiaParticionado):
     # TODO: implementar
     def creaParticiones(self,datos,seed=None):
         random.seed(seed)
-        # First of all, shuffle data and get the number of examples
-        np.random.shuffle(datos)
         [ndata, _] = datos.shape
         ntrain = int(ndata*self.percentage)
         for i in range(self.nreps):
@@ -60,8 +58,6 @@ class ValidacionCruzada(EstrategiaParticionado):
     # TODO: implementar
     def creaParticiones(self,datos,seed=None):
         random.seed(seed)
-        # First of all, shuffle data and get the number of examples
-        np.random.shuffle(datos)
         [ndata, _] = datos.shape
         # Size of each fold
         size = int(ndata/self.k_fold)
