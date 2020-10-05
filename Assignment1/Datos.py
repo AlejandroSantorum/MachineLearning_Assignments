@@ -37,13 +37,15 @@ class Datos:
         # 'nominalAtributos' will contain True, False if the feature is an integer or a real number.
         self.nominalAtributos = []
         example_row = self.datos[1]
-        for item in example_row:
+        for item in example_row[:-1]: # all atributes, but not the class
             if isinstance(item, str): # nominal feature
                 self.nominalAtributos.append(True)
             elif isinstance(item, int) or isinstance(item, float): # integer or real feature
                 self.nominalAtributos.append(False)
             else: # feature neither nominal nor integer nor real
                 raise ValueError('Tipo de dato diferente a nominal, entero o real')
+        # the class is always nominal
+        self.nominalAtributos.append(True)
 
         # building 'diccionario' variable: list of dictionaries. For each nominal feature a dictionary is built:
         # each key will correspond with an unique nominal and its value is the numerical representation of that key/nominal.
