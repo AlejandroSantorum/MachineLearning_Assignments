@@ -29,39 +29,54 @@ class Datos:
 
         # reading csv
         data_csv = pd.read_csv(nombreFichero, delimiter=',')
-        # storing data values in 'datos' class variable
-        self.datos = data_csv.values
 
         # building 'nominalAtributos' variable: list of boolean values with the same legth as the number of features
         # of the dataset (including the class feature). If the feature is a nominal value (string) the variable
         # 'nominalAtributos' will contain True, False if the feature is an integer or a real number.
         self.nominalAtributos = []
-        example_row = self.datos[1]
-        for item in example_row:
+        example_row = data_csv.values[1]
+        for item in example_row[:-1]: # all atributes, but not the class
             if isinstance(item, str): # nominal feature
                 self.nominalAtributos.append(True)
             elif isinstance(item, int) or isinstance(item, float): # integer or real feature
                 self.nominalAtributos.append(False)
             else: # feature neither nominal nor integer nor real
                 raise ValueError('Tipo de dato diferente a nominal, entero o real')
+        # the class is always nominal
+        self.nominalAtributos.append(True)
 
         # building 'diccionario' variable: list of dictionaries. For each nominal feature a dictionary is built:
         # each key will correspond with an unique nominal and its value is the numerical representation of that key/nominal.
         self.diccionario = []
-        ncols = self.datos.shape[1]
+        nexamples, ncols = data_csv.values.shape
         for col in range(ncols):
             # If the feature is integer type or real type, its dictionary is empty (it doesn't need translation)
             if self.nominalAtributos[col] == False:
                 self.diccionario.append({})
             # If the feature is nominal, then we build its translation dictionary to numerical values
             else:
-                col_set = list(set(self.datos[:,col]))   # getting unique nominals
+                col_set = list(set(data_csv.values[:,col]))   # getting unique nominals
                 col_set.sort()                      # sorting nominals alphabetically
                 feature_dict = {}
                 for i in range(len(col_set)):
                     feature_dict[col_set[i]] = i  # {key: nominal, value: i} (counter)
                 self.diccionario.append(feature_dict)  # appending new dictionary for that feature
-
+        
+        # storing data values in 'datos' class variable
+        nfeat = ncols-1
+        self.datos = np.zeros((nexamples, nfeat))
+        for feat in range(nfeat):
+            # taking column data
+            feat_vals = data_csv.values[:,feat]
+            # if it is nominal, we convert its values
+            if self.nominalAtributos[feat]:
+                # converting data into numerical values
+                numerical_vals = [self.diccionario[feat][val] for val in feat_vals]
+            else:
+                numerical_vals = feat_vals
+            # updating numerical data matrix
+            self.datos[:,feat] = numerical_vals
+            
 
     def extraeDatos(self, idx):
         # Se implementara en la practica 1
