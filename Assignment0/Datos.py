@@ -15,7 +15,7 @@
 
 # coding: utf-8
 import pandas as pd
-#import numpy as np
+import numpy as np
 
 
 class Datos:
@@ -63,19 +63,18 @@ class Datos:
                 self.diccionario.append(feature_dict)  # appending new dictionary for that feature
         
         # storing data values in 'datos' class variable
-        nfeat = ncols-1
-        self.datos = np.zeros((nexamples, nfeat))
-        for feat in range(nfeat):
+        self.datos = np.zeros((nexamples, ncols))
+        for col in range(ncols):
             # taking column data
-            feat_vals = data_csv.values[:,feat]
+            vals = data_csv.values[:,col]
             # if it is nominal, we convert its values
-            if self.nominalAtributos[feat]:
+            if self.nominalAtributos[col]:
                 # converting data into numerical values
-                numerical_vals = [self.diccionario[feat][val] for val in feat_vals]
+                numerical_vals = [self.diccionario[col][val] for val in vals]
             else:
-                numerical_vals = feat_vals
+                numerical_vals = vals
             # updating numerical data matrix
-            self.datos[:,feat] = numerical_vals
+            self.datos[:,col] = numerical_vals
             
 
     def extraeDatos(self, idx):
