@@ -193,14 +193,14 @@ class ClasificadorNaiveBayesSK(Clasificador):
         xdata = datostrain[:,:-1] # all rows, all columns but last one
         ydata = datostrain[:,-1]  # all rows, just last column
         
-        clf.fit(xdata,ydata)
+        self.clf.fit(xdata,ydata)
             
 
     # TODO: implementar
     def clasifica(self,datostest,atributosDiscretos,diccionario):
         xdata = datostest[:,:-1] # all rows, all columns but last one
         
-        return clf.predict(xdata)
+        return self.clf.predict(xdata)
         
         
         
