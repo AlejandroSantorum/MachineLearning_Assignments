@@ -76,7 +76,7 @@ class Clasificador:
 
 class ClasificadorNaiveBayes(Clasificador):
     
-    def __init__(self, laplace = True):
+    def __init__(self, laplace=True):
         self.prior_probs = []
         self.likelihoods = []
         self.laplace = laplace
@@ -182,11 +182,11 @@ class ClasificadorNaiveBayes(Clasificador):
     
 class ClasificadorNaiveBayesSK(Clasificador):
     
-    def __init__(self, laplace = True, gaussian_feat = True):
+    def __init__(self, laplace=True, gaussian_feat=True):
         if gaussian_feat:
             self.clf = GaussianNB()
         else:
-            self.clf = MultinomialNB(alpha=int(laplace))           
+            self.clf = MultinomialNB(alpha=int(laplace))
 
 
     def entrenamiento(self,datostrain,atributosDiscretos,diccionario):
