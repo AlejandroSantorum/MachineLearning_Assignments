@@ -1,3 +1,16 @@
+################################################################################
+#   Authors:
+#       · Alejandro Santorum Varela - alejandro.santorum@estudiante.uam.es
+#       · Jose Manuel Chacon Aguilera - josem.chacon@estudiante.uam.es
+#   File: Clasificador.py
+#   Date: Oct. 24, 2020
+#   Project: Assignment 1 Fundamentals of Machine Learning
+#   File Description: Implementation of class 'Clasificador'. The rest of
+#       classifiers inherit that class and implements its own training
+#       and validation methods.
+#
+################################################################################
+
 from abc import ABCMeta,abstractmethod
 import numpy as np
 import random
@@ -49,64 +62,63 @@ class Clasificador:
         # y obtenemos el error en la particion test. Otra opci�n es repetir la validaci�n simple un n�mero especificado de veces, obteniendo en cada una un error. Finalmente se calcular�a la media.
         random.seed(seed)
         np.random.shuffle(dataset.datos)
-        
+
         particionado.creaParticiones(dataset.datos, seed)
-        
+
         errores = []
 
         for particion in particionado.particiones:
-
+            # Partitioning
             datostrain = dataset.datos[particion.indicesTrain, :]
             datostest = dataset.datos[particion.indicesTest, :]
-            
+            # Training
             clasificador.entrenamiento(datostrain, dataset.nominalAtributos, dataset.diccionario)
-            
+            # Predicting
             pred = clasificador.clasifica(datostest, dataset.nominalAtributos, dataset.diccionario)
-            
-            ydatos = datostest[:,-1]            
+            # Testing error
+            ydatos = datostest[:,-1]
             err = clasificador.error(ydatos, pred)
 
             errores.append(err)
-        
+        # We return the array of errores. We can calculate later its mean and std
         return errores
-        
-        
+
+
 
 ##############################################################################
 
 class ClasificadorNaiveBayes(Clasificador):
-    
+
     def __init__(self, laplace=True):
         self.prior_probs = []
         self.likelihoods = []
         self.laplace = laplace
 
-    
+
     def _multinomialNB(self, xdata, ydata, feat_idx, diccionario):
         n_xi = len(diccionario[feat_idx])
         n_classes = len(diccionario[-1])
         theta_mtx = np.zeros((n_xi, n_classes))
-        
-        
-        
+
         for value in diccionario[feat_idx]:
             feat_val_idx = diccionario[feat_idx][value]
             for class_name in diccionario[-1]:
                 class_idx = diccionario[-1][class_name]
+                # Calculating likelihood probability
                 theta_mtx[feat_val_idx][class_idx] = sum((xdata[:,feat_idx] == feat_val_idx)&(ydata == class_idx))/sum(ydata == class_idx)
-        
+
         # applying laplace correction
         if self.laplace and 0 in theta_mtx:
             theta_mtx += np.ones((n_xi, n_classes))
-        
+
         return theta_mtx
-                      
+
 
     def _gaussianNB(self, xdata, ydata, feat_idx, diccionario):
         n_classes = len(diccionario[-1])
-        
+
         theta_mtx = np.zeros((n_classes, 2)) # 2 columns: mean and variance for each class
-        
+
         for class_name in diccionario[-1]:
             class_idx = diccionario[-1][class_name]
             # We calculate the mean coditioned to each possible class
@@ -118,24 +130,24 @@ class ClasificadorNaiveBayes(Clasificador):
 
             theta_mtx[class_idx][0] = mean_class
             theta_mtx[class_idx][1] = var_class
-        
+
         return theta_mtx
-            
+
 
 
     def entrenamiento(self,datostrain,atributosDiscretos,diccionario):
         xdata = datostrain[:,:-1] # all rows, all columns but last one
         ydata = datostrain[:,-1]  # all rows, just last column
-        
+
         m, n = xdata.shape     # number of examples, number of features
         n_classes = len(diccionario[-1])  # number of different classes
-        
+
         # Calculating prior probabilities
         self.prior_probs = np.zeros(n_classes) # initializing array of prior probs with zeros
         for class_name in diccionario[-1]:
             class_idx = diccionario[-1][class_name]
             self.prior_probs[class_idx] = sum((class_idx == ydata))/m # P(y=i) = count(ydata==i)/len(ydata)
-        
+
         likelihoods_list = []
         # Calculating likelihoods
         for feat_idx in range(n):
@@ -147,19 +159,19 @@ class ClasificadorNaiveBayes(Clasificador):
                 theta_mtx = self._gaussianNB(xdata, ydata, feat_idx, diccionario)
 
             likelihoods_list.append(theta_mtx)
-        
+
         self.likelihoods = np.asarray(likelihoods_list, dtype="object")
 
-    
+
 
     # TODO: implementar
     def clasifica(self,datostest,atributosDiscretos,diccionario):
         xdata = datostest[:,:-1] # all rows, all columns but last one
         ydata = datostest[:,-1]  # all rows, just last column
-        
+
         ndata, n_feat = xdata.shape     # number of examples, number of features
         n_classes = len(diccionario[-1])  # number of different classes
-        
+
         pred = []
         for i in range(ndata):
             classes_probs = []
@@ -167,21 +179,23 @@ class ClasificadorNaiveBayes(Clasificador):
                 class_p = self.prior_probs[k]
                 for feat_idx in range(n_feat):
                     if atributosDiscretos[feat_idx]:
+                        # calculating posterior probability
                         class_p *= self.likelihoods[feat_idx][int(xdata[i][feat_idx])][k]
                     else:
                         mean = self.likelihoods[feat_idx][k][0]
                         var = self.likelihoods[feat_idx][k][1]
+                        # calculating posterior probability
                         class_p *= norm.pdf(xdata[i][feat_idx], loc=mean, scale=math.sqrt(var))
                 classes_probs.append(class_p)
             pred.append(classes_probs.index(max(classes_probs)))
-            
-        return np.asarray(pred, dtype="object")
-    
 
-    
-    
+        return np.asarray(pred, dtype="object")
+
+
+
+# scikit-learn NaiveBayes classifier encapsulated in our own general class
 class ClasificadorNaiveBayesSK(Clasificador):
-    
+
     def __init__(self, laplace=True, gaussian_feat=True):
         if gaussian_feat:
             self.clf = GaussianNB()
@@ -192,15 +206,12 @@ class ClasificadorNaiveBayesSK(Clasificador):
     def entrenamiento(self,datostrain,atributosDiscretos,diccionario):
         xdata = datostrain[:,:-1] # all rows, all columns but last one
         ydata = datostrain[:,-1]  # all rows, just last column
-        
+
         self.clf.fit(xdata,ydata)
-            
+
 
     # TODO: implementar
     def clasifica(self,datostest,atributosDiscretos,diccionario):
         xdata = datostest[:,:-1] # all rows, all columns but last one
-        
+
         return self.clf.predict(xdata)
-        
-        
-        
