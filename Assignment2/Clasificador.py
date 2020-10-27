@@ -21,6 +21,8 @@ from collections import Counter
 
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+
 
 
 class Clasificador:
@@ -88,6 +90,7 @@ class Clasificador:
 
 
 ##############################################################################
+##############################################################################
 
 class ClasificadorNaiveBayes(Clasificador):
 
@@ -136,7 +139,6 @@ class ClasificadorNaiveBayes(Clasificador):
         return theta_mtx
 
 
-
     def entrenamiento(self,datostrain,atributosDiscretos,diccionario):
         xdata = datostrain[:,:-1] # all rows, all columns but last one
         ydata = datostrain[:,-1]  # all rows, just last column
@@ -163,7 +165,6 @@ class ClasificadorNaiveBayes(Clasificador):
             likelihoods_list.append(theta_mtx)
 
         self.likelihoods = np.asarray(likelihoods_list, dtype="object")
-
 
 
     # TODO: implementar
@@ -220,6 +221,9 @@ class ClasificadorNaiveBayesSK(Clasificador):
 
 
 
+##############################################################################
+##############################################################################
+
 def euclidean_dist(x1, x2):
     return math.sqrt(np.sum((x1-x2)**2))
 
@@ -271,7 +275,7 @@ class ClasificadorVecinosProximos(Clasificador):
             # Sorting distances list
             sorted_dist = sorted(distances)
             pred_aux = []
-            for d in sorted_dist[:self.K]: # Getting K-nearest neighbours
+            for d in sorted_dist[:self.K]: # Getting K-nearest neighbors
                 idx = distances.index(d)
                 pred_aux.append(self.ytrain[idx])
             # Getting most common class
@@ -279,3 +283,44 @@ class ClasificadorVecinosProximos(Clasificador):
             pred.append(p_class)
 
         return np.asarray(pred, dtype="object")
+
+
+
+class ClasificadorVecinosProximosSK(Clasificador):
+
+    def __init__(self, K=5, dist='euclidean'):
+        self.K = K
+        self.dist = dist
+        self.clf = KNeighborsClassifier(n_neighbors=K, metric=dist)
+
+
+    def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
+        xdata = datosTrain[:,:-1] # all rows, all columns but last one
+        ydata = datosTrain[:,-1]  # all rows, just last column
+
+        self.clf.fit(xdata,ydata)
+
+
+    # TODO: implementar
+    def clasifica(self,datosTest,atributosDiscretos,diccionario):
+        xdata = datosTest[:,:-1] # all rows, all columns but last one
+
+        return self.clf.predict(xdata)
+
+
+
+##############################################################################
+##############################################################################
+
+class ClasificadorRegresionLogistica(Clasificador):
+
+    def __init__(self):
+        pass
+
+
+    def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
+        pass
+
+
+    def clasifica(self,datosTest,atributosDiscretos,diccionario):
+        pass
