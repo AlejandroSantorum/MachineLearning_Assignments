@@ -21,12 +21,14 @@ import numpy as np
 class Datos:
 
     # TODO: procesar el fichero para asignar correctamente las variables nominalAtributos, datos y diccionarios
-    def __init__(self, nombreFichero):
-        # Init attributes
+    def __init__(self, nombreFichero, normalize=False):
+        # Attributes
         self.datos = None
         self.nominalAtributos = None
         self.diccionario = None
-
+        self.means = None # attributes mean array. Used in normalization
+        self.stds = None # attributes std deviation array. Used in normalization
+    
         # reading csv
         data_csv = pd.read_csv(nombreFichero, delimiter=',')
 
@@ -61,7 +63,7 @@ class Datos:
                 for i in range(len(col_set)):
                     feature_dict[col_set[i]] = i  # {key: nominal, value: i} (counter)
                 self.diccionario.append(feature_dict)  # appending new dictionary for that feature
-        
+
         # storing data values in 'datos' class variable
         self.datos = np.zeros((nexamples, ncols))
         for col in range(ncols):
@@ -75,7 +77,39 @@ class Datos:
                 numerical_vals = vals
             # updating numerical data matrix
             self.datos[:,col] = numerical_vals
-            
+
+        if normalize:
+            self.normalizarDatos(self.datos, self.nominalAtributos)
+
+
+
+    def calcularMediasDesv(self, datos, nominalAtributos):
+        self.means = []
+        self.stds = []
+
+        for feat_idx, nominal_val in enumerate(nominalAtributos):
+            if nominal_val == False: # continuous attribute
+                self.means.append(np.mean(datos[:,feat_idx]))
+                self.stds.append(np.std(datos[:,feat_idx]))
+            else: # nominal attribute
+                self.means.append(None)
+                self.stds.append(None)
+
+        return self.means, self.stds
+
+
+
+    def normalizarDatos(self, datos, nominalAtributos):
+        self.calcularMediasDesv(datos, nominalAtributos)
+
+        for idx, nominal_val in enumerate(nominalAtributos):
+            if nominal_val == False: # continuous attribute
+                if self.stds[idx] != 0:
+                    datos[:,idx] = (datos[:,idx] - self.means[idx])/self.stds[idx]
+                else:
+                    datos[:,idx] -= self.means[idx]
+
+
 
     def extraeDatos(self, idx):
         # Se implementara en la practica 1
