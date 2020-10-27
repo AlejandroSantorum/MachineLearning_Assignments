@@ -14,8 +14,10 @@
 from abc import ABCMeta,abstractmethod
 import numpy as np
 import random
+import scipy
 from scipy.stats import norm
 import math
+from collections import Counter
 
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.naive_bayes import GaussianNB
@@ -215,3 +217,65 @@ class ClasificadorNaiveBayesSK(Clasificador):
         xdata = datostest[:,:-1] # all rows, all columns but last one
 
         return self.clf.predict(xdata)
+
+
+
+def euclidean_dist(x1, x2):
+    return math.sqrt(np.sum((x1-x2)**2))
+
+def manhattan_dist(x1, x2):
+    return np.sum(np.absolute(x1-x2))
+
+def mahalanobis_dist(x1, x2):
+    Sigma = np.cov(x1, x2)
+    Sigma_inv = np.linalg.inv(Sigma)
+    return scipy.spatial.distance.mahalanobis(x1, x2, Sigma_inv)
+
+
+class ClasificadorVecinosProximos(Clasificador):
+
+    def __init__(self, K=5, dist='euclidean'):
+        self.K = K
+        self.xtrain = None
+        self.ytrain = None
+
+        if dist == 'euclidean': #dasmdsa
+            self.dist = euclidean_dist
+        elif dist == 'manhattan':
+            self.dist = manhattan_dist
+        elif dist == 'mahalanobis':
+            self.dist = mahalanobis_dist
+        else:
+            self.dist = None
+            raise Exception('The introduced distance is not available')
+
+
+    def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
+        # We suppose data is already normalized
+        self.xtrain = datosTrain[:,:-1] # all rows, all columns but last one
+        self.ytrain = datosTrain[:,-1]  # all rows, just last column
+
+
+    def clasifica(self,datosTest,atributosDiscretos,diccionario):
+        xtest = datosTest[:,:-1] # all rows, all columns but last one
+        ytest = datosTest[:,-1]  # all rows, just last column
+
+        ntest, n_feat = xtest.shape  # number of examples, number of features
+        ntrain = self.xtrain.shape[0]
+
+        pred = []
+        for idx_test in range(ntest):
+            distances = []
+            for idx_train in range(ntrain):
+                distances.append(self.dist(xtest[idx_test,:], self.xtrain[idx_train,:]))
+            # Sorting distances list
+            sorted_dist = sorted(distances)
+            pred_aux = []
+            for d in sorted_dist[:self.K]: # Getting K-nearest neighbours
+                idx = distances.index(d)
+                pred_aux.append(self.ytrain[idx])
+            # Getting most common class
+            [(p_class, times_class)] = Counter(pred_aux).most_common(1)
+            pred.append(p_class)
+
+        return np.asarray(pred, dtype="object")
