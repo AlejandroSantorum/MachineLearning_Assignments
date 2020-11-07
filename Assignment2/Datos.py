@@ -28,7 +28,7 @@ class Datos:
         self.diccionario = None
         self.means = None # attributes mean array. Used in normalization
         self.stds = None # attributes std deviation array. Used in normalization
-    
+
         # reading csv
         data_csv = pd.read_csv(nombreFichero, delimiter=',')
 

@@ -4,7 +4,7 @@
 #       · Jose Manuel Chacon Aguilera - josem.chacon@estudiante.uam.es
 #   File: Clasificador.py
 #   Date: Oct. 24, 2020
-#   Project: Assignment 1 Fundamentals of Machine Learning
+#   Project: Assignment 2 Fundamentals of Machine Learning
 #   File Description: Implementation of class 'Clasificador'. The rest of
 #       classifiers inherit that class and implements its own training
 #       and validation methods.
@@ -22,6 +22,7 @@ from collections import Counter
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 
 
 
@@ -312,15 +313,83 @@ class ClasificadorVecinosProximosSK(Clasificador):
 ##############################################################################
 ##############################################################################
 
+def sigmoid(z):
+    return 1/(1+math.exp(-z))
+
+
+
 class ClasificadorRegresionLogistica(Clasificador):
 
-    def __init__(self):
-        pass
+    def __init__(self, learning_rate=0.1, nepochs=100):
+        self.W = None
+        self.lr = learning_rate
+        self.nepochs = nepochs
+
+
+    def entrenamiento(self, datosTrain, atributosDiscretos, diccionario):
+        n_data = datosTrain.shape[0] # number of train examples
+        intercept = np.ones((n_data, 1))
+        # all rows, all columns but last one, adding intercept (column of ones)
+        xdata = np.hstack((intercept, datosTrain[:,:-1]))
+        ydata = datosTrain[:,-1] # all rows, just last column
+
+        n_feat = xdata.shape[1] # number of features
+
+        # Generating random initial weights in [-0.5, 0.5]
+        # Remeber n_feat includes intercept column
+        self.W = np.random.uniform(-0.5, 0.5, size=n_feat)
+
+        for epoch in range(self.nepochs):
+            for j in range(n_data):
+                # evaluating sigmoid function in W.T * x_j
+                sig = sigmoid(np.dot(xdata[j,:], self.W))
+                # updating weights
+                self.W = self.W - self.lr*(sig - ydata[j])*xdata[j,:]
+
+
+    def clasifica(self, datosTest, atributosDiscretos, diccionario):
+        n_data = datosTest.shape[0] # number of test examples
+        intercept = np.ones((n_data, 1))
+        # all rows, all columns but last one, adding intercept (column of ones)
+        xdata = np.hstack((intercept, datosTest[:,:-1]))
+        ydata = datosTest[:,-1] # all rows, just last column
+
+        n_feat = xdata.shape[1] # number of features
+
+        pred = []
+        for j in range(n_data):
+            sig = sigmoid(np.dot(self.W, xdata[j,:]))
+            if sig >= 0.5:
+                pred.append(1)
+            else:
+                pred.append(0)
+
+        return np.asarray(pred, dtype="object")
+
+
+
+
+class ClasificadorRegresionLogisticaSK(Clasificador):
+
+    def __init__(self, learning_rate=0.1, sgd=False):
+        self.lr = learning_rate
+        self.sgd = sgd
+        if sgd:
+            self.clf = SGDClassifier(loss='log', penalty=None,
+                                     learning_rate='constant', eta0=learning_rate,
+                                     max_iter=1000, tol=1e-4)
+        else:
+            self.clf = LogisticRegression(solver='lbfgs')
 
 
     def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
-        pass
+        xdata = datosTrain[:,:-1] # all rows, all columns but last one
+        ydata = datosTrain[:,-1]  # all rows, just last column
+
+        self.clf.fit(xdata,ydata)
 
 
     def clasifica(self,datosTest,atributosDiscretos,diccionario):
-        pass
+        xdata = datosTest[:,:-1] # all rows, all columns but last one
+
+        return self.clf.predict(xdata)
