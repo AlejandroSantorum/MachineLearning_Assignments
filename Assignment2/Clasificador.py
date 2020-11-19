@@ -225,23 +225,6 @@ class ClasificadorNaiveBayesSK(Clasificador):
 ##############################################################################
 ##############################################################################
 
-def euclidean_dist(x1, x2):
-    return math.sqrt(np.sum((x1-x2)**2))
-
-def manhattan_dist(x1, x2):
-    return np.sum(np.absolute(x1-x2))
-
-def mahalanobis_dist(x1, x2):
-    Sigma = np.cov(x1, x2)
-    #x = np.stack((x1, x2), axis=1)
-    #Sigma = np.cov(x)
-    print(Sigma.shape)
-    print(Sigma)
-    Sigma_inv = np.linalg.inv(Sigma)
-    print(Sigma_inv)
-    return scipy.spatial.distance.mahalanobis(x1, x2, Sigma_inv)
-
-
 class ClasificadorVecinosProximos(Clasificador):
 
     def __init__(self, K=5, dist='euclidean'):
