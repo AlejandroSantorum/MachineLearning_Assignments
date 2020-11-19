@@ -284,12 +284,18 @@ class ClasificadorVecinosProximosSK(Clasificador):
     def __init__(self, K=5, dist='euclidean'):
         self.K = K
         self.dist = dist
-        self.clf = KNeighborsClassifier(n_neighbors=K, metric=dist)
+        self.clf = None # initialized in training method
 
 
     def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
         xdata = datosTrain[:,:-1] # all rows, all columns but last one
         ydata = datosTrain[:,-1]  # all rows, just last column
+        
+        if self.dist == 'mahalanobis':
+            self.clf = KNeighborsClassifier(n_neighbors=self.K, metric=self.dist,\
+                                            metric_params={'V': np.cov(xdata, rowvar=False)})
+        else:
+            self.clf = KNeighborsClassifier(n_neighbors=self.K, metric=self.dist)
 
         self.clf.fit(xdata,ydata)
 
@@ -363,15 +369,15 @@ class ClasificadorRegresionLogistica(Clasificador):
 
 class ClasificadorRegresionLogisticaSK(Clasificador):
 
-    def __init__(self, learning_rate=0.1, sgd=False):
+    def __init__(self, learning_rate=0.1, nepochs=100, sgd=False):
         self.lr = learning_rate
         self.sgd = sgd
         if sgd:
             self.clf = SGDClassifier(loss='log', penalty=None,
                                      learning_rate='constant', eta0=learning_rate,
-                                     max_iter=1000, tol=1e-4)
+                                     max_iter=nepochs, tol=1e-4)
         else:
-            self.clf = LogisticRegression(solver='lbfgs')
+            self.clf = LogisticRegression(solver='lbfgs', max_iter=nepochs)
 
 
     def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
