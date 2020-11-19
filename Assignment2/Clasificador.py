@@ -233,7 +233,12 @@ def manhattan_dist(x1, x2):
 
 def mahalanobis_dist(x1, x2):
     Sigma = np.cov(x1, x2)
+    #x = np.stack((x1, x2), axis=1)
+    #Sigma = np.cov(x)
+    print(Sigma.shape)
+    print(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
+    print(Sigma_inv)
     return scipy.spatial.distance.mahalanobis(x1, x2, Sigma_inv)
 
 
@@ -241,24 +246,20 @@ class ClasificadorVecinosProximos(Clasificador):
 
     def __init__(self, K=5, dist='euclidean'):
         self.K = K
+        self.dist = dist
+        self.Sigma = None
+        self.invSigma = None
         self.xtrain = None
         self.ytrain = None
-
-        if dist == 'euclidean': #dasmdsa
-            self.dist = euclidean_dist
-        elif dist == 'manhattan':
-            self.dist = manhattan_dist
-        elif dist == 'mahalanobis':
-            self.dist = mahalanobis_dist
-        else:
-            self.dist = None
-            raise Exception('The introduced distance is not available')
 
 
     def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
         # We suppose data is already normalized
         self.xtrain = datosTrain[:,:-1] # all rows, all columns but last one
         self.ytrain = datosTrain[:,-1]  # all rows, just last column
+        if self.dist == 'mahalanobis':
+            self.Sigma = np.cov(self.xtrain, rowvar=False)
+            self.invSigma = np.linalg.inv(self.Sigma)
 
 
     def clasifica(self,datosTest,atributosDiscretos,diccionario):
@@ -272,7 +273,15 @@ class ClasificadorVecinosProximos(Clasificador):
         for idx_test in range(ntest):
             distances = []
             for idx_train in range(ntrain):
-                distances.append(self.dist(xtest[idx_test,:], self.xtrain[idx_train,:]))
+                if self.dist == 'euclidean':
+                    distances.append(math.sqrt(np.sum((xtest[idx_test,:]-self.xtrain[idx_train,:])**2)))
+                elif self.dist == 'manhattan':
+                    distances.append(np.sum(np.absolute(xtest[idx_test,:]-self.xtrain[idx_train,:])))
+                elif self.dist == 'mahalanobis':
+                    distances.append(scipy.spatial.distance.mahalanobis(xtest[idx_test,:],\
+                                                                        self.xtrain[idx_train,:], self.invSigma))
+                else:
+                    raise Exception('The introduced distance is not available')
             # Sorting distances list
             sorted_dist = sorted(distances)
             pred_aux = []
