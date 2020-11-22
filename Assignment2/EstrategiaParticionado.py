@@ -3,8 +3,8 @@
 #       · Alejandro Santorum Varela - alejandro.santorum@estudiante.uam.es
 #       · Jose Manuel Chacon Aguilera - josem.chacon@estudiante.uam.es
 #   File: EstrategiaParticionado.py
-#   Date: Oct. 24, 2020
-#   Project: Assignment 1 Fundamentals of Machine Learning
+#   Date: Nov. 22, 2020
+#   Project: Assignment 2 Fundamentals of Machine Learning
 #   File Description: Implementation of class 'Particion' and
 #       'EstrategiaParticionado'. The rest of partition strategies
 #       inherit that class and implements its own partition methods.

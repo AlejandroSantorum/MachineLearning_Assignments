@@ -4,7 +4,7 @@
 #       · Jose Manuel Chacon Aguilera - josem.chacon@estudiante.uam.es
 #   File: Datos.py
 #   Date: Sept. 21, 2020
-#   Project: Assignment 0 Fundamentals of Machine Learning
+#   Project: Assignment 2 Fundamentals of Machine Learning
 #   File Description: Preliminary treatment of datasets using the class provided
 #       in this file. It reads the data of the given file and stores all the
 #       needed information for further use by machine learning algorithms.
@@ -105,6 +105,7 @@ class Datos:
         for idx, nominal_val in enumerate(nominalAtributos):
             if nominal_val == False: # continuous attribute
                 if self.stds[idx] != 0:
+                    # centering and scaling data, using mean and standard deviation
                     datos[:,idx] = (datos[:,idx] - self.means[idx])/self.stds[idx]
                 else:
                     datos[:,idx] -= self.means[idx]

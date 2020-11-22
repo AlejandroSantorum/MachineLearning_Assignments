@@ -3,7 +3,7 @@
 #       · Alejandro Santorum Varela - alejandro.santorum@estudiante.uam.es
 #       · Jose Manuel Chacon Aguilera - josem.chacon@estudiante.uam.es
 #   File: Clasificador.py
-#   Date: Oct. 24, 2020
+#   Date: Nov. 24, 2020
 #   Project: Assignment 2 Fundamentals of Machine Learning
 #   File Description: Implementation of class 'Clasificador'. The rest of
 #       classifiers inherit that class and implements its own training
@@ -241,6 +241,7 @@ class ClasificadorVecinosProximos(Clasificador):
         self.xtrain = datosTrain[:,:-1] # all rows, all columns but last one
         self.ytrain = datosTrain[:,-1]  # all rows, just last column
         if self.dist == 'mahalanobis':
+            # we use only train set to estimate covariance matrix
             self.Sigma = np.cov(self.xtrain, rowvar=False)
             self.invSigma = np.linalg.inv(self.Sigma)
 
@@ -257,10 +258,13 @@ class ClasificadorVecinosProximos(Clasificador):
             distances = []
             for idx_train in range(ntrain):
                 if self.dist == 'euclidean':
+                    # calculating euclidean distance between a test set example and a train set example
                     distances.append(math.sqrt(np.sum((xtest[idx_test,:]-self.xtrain[idx_train,:])**2)))
                 elif self.dist == 'manhattan':
+                    # calculating manhattan distance between a test set example and a train set example
                     distances.append(np.sum(np.absolute(xtest[idx_test,:]-self.xtrain[idx_train,:])))
                 elif self.dist == 'mahalanobis':
+                    # calculating mahalanobis distance between a test set example and a train set example
                     distances.append(scipy.spatial.distance.mahalanobis(xtest[idx_test,:],\
                                                                         self.xtrain[idx_train,:], self.invSigma))
                 else:
@@ -292,6 +296,7 @@ class ClasificadorVecinosProximosSK(Clasificador):
         ydata = datosTrain[:,-1]  # all rows, just last column
         
         if self.dist == 'mahalanobis':
+            # mahalanobis distance needs an additional param, covariance matrix
             self.clf = KNeighborsClassifier(n_neighbors=self.K, metric=self.dist,\
                                             metric_params={'V': np.cov(xdata, rowvar=False)})
         else:
@@ -356,10 +361,11 @@ class ClasificadorRegresionLogistica(Clasificador):
 
         pred = []
         for j in range(n_data):
+            # calculate probability of belonging to class 1
             sig = sigmoid(np.dot(self.W, xdata[j,:]))
-            if sig >= 0.5:
+            if sig >= 0.5: # predicted class 1
                 pred.append(1)
-            else:
+            else: # predicted class 0
                 pred.append(0)
 
         return np.asarray(pred, dtype="object")
@@ -373,6 +379,7 @@ class ClasificadorRegresionLogisticaSK(Clasificador):
         self.lr = learning_rate
         self.sgd = sgd
         if sgd:
+            # loss = 'log' => equivalent to logistic regression
             self.clf = SGDClassifier(loss='log', penalty=None,
                                      learning_rate='constant', eta0=learning_rate,
                                      max_iter=nepochs, tol=1e-4)
