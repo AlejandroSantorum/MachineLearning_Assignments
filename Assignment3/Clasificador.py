@@ -398,3 +398,53 @@ class ClasificadorRegresionLogisticaSK(Clasificador):
         xdata = datosTest[:,:-1] # all rows, all columns but last one
 
         return self.clf.predict(xdata)
+
+
+
+##############################################################################
+##############################################################################
+
+
+class AlgoritmoGenetico(Clasificador):
+    self.n_population = None
+    self.max_rules = None
+    self.population = None
+
+
+    def __init_population(self, feat_size):
+        # Creating initial population of size 'self.n-population'
+        for i in range(self.n_population):
+            # Creating a new individual, represented as a list of rules
+            new_individual = []
+            # The number of rules of the individual is chosen randomly,
+            # between 1 (minimum number of rules) and 'self.max_rules'
+            n_rules = random.randint(1, self.max_rules)
+            for j in range(n_rules): # Creating 'n_rules' new rules
+                # Creating a new rule as a random binary string of size 'feat_size'
+                new_rule = random.choices([0,1], k=feat_size)
+                # Inserting new rule to the new individual
+                new_individual.append(new_rule)
+
+            # Inserting new individual to initial population
+            self.population.append(new_individual)
+
+
+    def __init__(self, n_population=100, max_rules=5):
+        self.n_population = n_population
+        self.max_rules = max_rules
+        self.population = []
+
+
+    def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
+        xdata = datosTrain[:,:-1] # all rows, all columns but last one
+        ydata = datosTrain[:,-1]  # all rows, just last column (class)
+
+        n_examples, feat_size = xdata.shape
+
+        # Creating initial population
+        self.__init_population(feat_size)
+
+    
+    def clasifica(self,datosTest,atributosDiscretos,diccionario):
+        xdata = datosTest[:,:-1] # all rows, all columns but last one
+        ydata = datosTest[:,-1]  # all rows, just last column (class)
