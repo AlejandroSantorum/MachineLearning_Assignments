@@ -16,12 +16,13 @@
 # coding: utf-8
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import OneHotEncoder
 
 
 class Datos:
 
     # TODO: procesar el fichero para asignar correctamente las variables nominalAtributos, datos y diccionarios
-    def __init__(self, nombreFichero, normalize=False):
+    def __init__(self, nombreFichero, normalize=False, allNominal=False):
         # Attributes
         self.datos = None
         self.nominalAtributos = None
@@ -37,15 +38,19 @@ class Datos:
         # 'nominalAtributos' will contain True, False if the feature is an integer or a real number.
         self.nominalAtributos = []
         example_row = data_csv.values[1]
-        for item in example_row[:-1]: # all atributes, but not the class
-            if isinstance(item, str): # nominal feature
+        if allNominal:
+            for item in example_row:
                 self.nominalAtributos.append(True)
-            elif isinstance(item, int) or isinstance(item, float): # integer or real feature
-                self.nominalAtributos.append(False)
-            else: # feature neither nominal nor integer nor real
-                raise ValueError('Tipo de dato diferente a nominal, entero o real')
-        # the class is always nominal
-        self.nominalAtributos.append(True)
+        else:         
+            for item in example_row[:-1]: # all atributes, but not the class
+                if isinstance(item, str): # nominal feature
+                    self.nominalAtributos.append(True)
+                elif isinstance(item, int) or isinstance(item, float): # integer or real feature
+                    self.nominalAtributos.append(False)
+                else: # feature neither nominal nor integer nor real
+                    raise ValueError('Tipo de dato diferente a nominal, entero o real')
+            # the class is always nominal
+            self.nominalAtributos.append(True)
 
         # building 'diccionario' variable: list of dictionaries. For each nominal feature a dictionary is built:
         # each key will correspond with an unique nominal and its value is the numerical representation of that key/nominal.
@@ -109,6 +114,17 @@ class Datos:
                     datos[:,idx] = (datos[:,idx] - self.means[idx])/self.stds[idx]
                 else:
                     datos[:,idx] -= self.means[idx]
+                    
+    def encodeDatos(datos):
+        X = datos[:,:-1] # all rows, all columns but last one
+        Y = datos[:,-1]  # all rows, just last column (class)
+
+        # One hot encoding for discrete features
+        enc = OneHotEncoder(sparse=False, categories='auto')
+        X_enc = np.array(enc.fit_transform(X)) 
+        # Concatenating encoded data matrix and classes
+        datos_aux = np.concatenate((X_enc, Y[:,None]), axis=1)
+        return datos_aux
 
 
 
