@@ -22,7 +22,7 @@ from sklearn.preprocessing import OneHotEncoder
 class Datos:
 
     # TODO: procesar el fichero para asignar correctamente las variables nominalAtributos, datos y diccionarios
-    def __init__(self, nombreFichero, normalize=False, allNominal=False):
+    def __init__(self, nombreFichero, normalize=False, col_custom_dtypes=None, allNominal=False):
         # Attributes
         self.datos = None
         self.nominalAtributos = None
@@ -31,13 +31,17 @@ class Datos:
         self.stds = None # attributes std deviation array. Used in normalization
 
         # reading csv
-        data_csv = pd.read_csv(nombreFichero, delimiter=',')
+        if col_custom_dtypes:
+            data_csv = pd.read_csv(nombreFichero, delimiter=',', dtype=col_custom_dtypes)
+        else:
+            data_csv = pd.read_csv(nombreFichero, delimiter=',')
 
         # building 'nominalAtributos' variable: list of boolean values with the same legth as the number of features
         # of the dataset (including the class feature). If the feature is a nominal value (string) the variable
         # 'nominalAtributos' will contain True, False if the feature is an integer or a real number.
         self.nominalAtributos = []
         example_row = data_csv.values[1]
+
         if allNominal:
             for item in example_row:
                 self.nominalAtributos.append(True)
@@ -119,7 +123,7 @@ class Datos:
         X = datos[:,:-1] # all rows, all columns but last one
         Y = datos[:,-1]  # all rows, just last column (class)
 
-        # One hot encoding for discrete features
+        # One hot encoding for discrete (nominal) features
         enc = OneHotEncoder(sparse=False, categories='auto')
         X_enc = np.array(enc.fit_transform(X)) 
         # Concatenating encoded data matrix and classes
