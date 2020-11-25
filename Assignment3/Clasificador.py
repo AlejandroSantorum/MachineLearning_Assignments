@@ -406,9 +406,11 @@ class ClasificadorRegresionLogisticaSK(Clasificador):
 
 
 class AlgoritmoGenetico(Clasificador):
-    self.n_population = None
-    self.max_rules = None
-    self.population = None
+    # Esto lo he cambiado
+    def __init__(self, n_population=100, max_rules=5):
+        self.n_population = n_population
+        self.max_rules = max_rules
+        self.population = []
 
 
     def __init_population(self, feat_size):
@@ -428,11 +430,6 @@ class AlgoritmoGenetico(Clasificador):
             # Inserting new individual to initial population
             self.population.append(new_individual)
 
-
-    def __init__(self, n_population=100, max_rules=5):
-        self.n_population = n_population
-        self.max_rules = max_rules
-        self.population = []
 
 
     def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
