@@ -125,9 +125,11 @@ class Datos:
 
         # One hot encoding for discrete (nominal) features
         enc = OneHotEncoder(sparse=False, categories='auto')
-        X_enc = np.array(enc.fit_transform(X)) 
+        X_enc = np.array(enc.fit_transform(X), dtype=np.int32) 
+
         # Concatenating encoded data matrix and classes
-        datos_aux = np.concatenate((X_enc, Y[:,None]), axis=1)
+        datos_aux = np.array(np.concatenate((X_enc, Y[:,None]), axis=1), dtype=np.int32)
+        print(datos_aux)
         return datos_aux
 
 
