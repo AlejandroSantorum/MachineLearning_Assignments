@@ -426,8 +426,11 @@ class AlgoritmoGenetico(Clasificador):
             # between 1 (minimum number of rules) and 'self.max_rules'
             n_rules = random.randint(1, self.max_rules)
             for j in range(n_rules): # Creating 'n_rules' new rules
-                # Creating a new rule as a random binary string of size 'feat_size' + 1 (predicted class)
-                new_rule = random.choices([0,1], k=feat_size+1)
+                # Asserting that new rule cannot have EVERY gene equal 0 or 1
+                new_rule = []
+                while sum(new_rule)==0 or sum(new_rule)==len(new_rule):
+                    # Creating a new rule as a random binary string of size 'feat_size' + 1 (predicted class)
+                    new_rule = random.choices([0,1], k=feat_size+1)
                 # Inserting new rule to the new individual
                 new_individual.append(new_rule)
 
