@@ -426,8 +426,8 @@ class AlgoritmoGenetico(Clasificador):
             # between 1 (minimum number of rules) and 'self.max_rules'
             n_rules = random.randint(1, self.max_rules)
             for j in range(n_rules): # Creating 'n_rules' new rules
-                # Creating a new rule as a random binary string of size 'feat_size'
-                new_rule = random.choices([0,1], k=feat_size)
+                # Creating a new rule as a random binary string of size 'feat_size' + 1 (predicted class)
+                new_rule = random.choices([0,1], k=feat_size+1)
                 # Inserting new rule to the new individual
                 new_individual.append(new_rule)
 
