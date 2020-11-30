@@ -466,9 +466,12 @@ class AlgoritmoGenetico(Clasificador):
     
                 if activation: # saving predicted class by this rule
                     predicted_classes.append(rule[-1])
-
+            
+            # if there is none rules that have been activated
+            if predicted_classes == []:
+                continue
             # if the sum is larger than the half size of the list, it means the number of 1's is larger than 0's
-            if sum(predicted_classes) > len(predicted_classes)/2: # predicted class = 1
+            elif sum(predicted_classes) > len(predicted_classes)/2: # predicted class = 1
                 if ydata[i] == 1:
                     n_hits += 1
             # if the sum is smaller than the half size of the list, it means the number of 0's is larger than 1's
