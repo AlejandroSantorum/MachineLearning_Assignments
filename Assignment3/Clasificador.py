@@ -491,22 +491,47 @@ class AlgoritmoGenetico(Clasificador):
 
 
 
-    def __elitism(self, n_elite_inds=None):
+    def __elitism(self, fitness_list, n_elite_inds=None):
         elite = []
 
         if n_elite_inds:
             # Choose n_elite_inds (integer) best individuals
-
-        for ind in self.population:
+            elite_size = n_elite_inds
+        else:
             # Choose self.elite_perc (percentage) best individuals
+            elite_size = math.floor(self.perc * len(self.population))
+
+        n_extracted = 0
+        while n_extracted < elite_size:
+            # getting maximum fitness value
+            best_fitness_val = max(fitness_list)
+            # getting index of individual with the highest fitness
+            best_fitness_ind = fitness_list.index(best_fitness_val)
+            # getting individual (and removing it from population) with highest fitness
+            best_ind = self.population.pop(best_fitness_ind)
+            # deleting its fitness from fitness_list
+            fitness_list.remove(best_fitness_val)
+            # adding best individual to elite set
+            elite.append(best_ind)
+            n_extracted += 1
         
         return elite
 
     
 
-    def __parent_selection(self):
-        ####
-        return parents
+    def __parent_selection(self, fitness_list):
+        # total fitness
+        s = sum(fitness_list)
+        # list of weighted fitness of each individual
+        weighted_probs = [f/s for f in fitness_list]
+
+        ## np.random.choice(a, n, replace=False, p=None)
+        #       a := list of items to choose
+        #       n := number of items to choose
+        #       replace: if True, items are chosen with replacement
+        #       p: the probabilities associated with each entry in a. Otherwise, they are chosen uniformly.
+        ##
+        return np.random.choice(self.population, len(self.population), replace=True, p=weighted_probs)
 
     
 
@@ -519,6 +544,11 @@ class AlgoritmoGenetico(Clasificador):
     def __mutation(self, parents):
         ####
         return parents
+
+
+    def __survivor_selection(self, parents, elite_inds):
+        # elite individuals get to next generation directly
+        return parents + elite_inds
 
 
 
