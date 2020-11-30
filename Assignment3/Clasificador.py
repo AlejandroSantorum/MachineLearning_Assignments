@@ -408,10 +408,13 @@ class ClasificadorRegresionLogisticaSK(Clasificador):
 class AlgoritmoGenetico(Clasificador):
     
 
-    def __init__(self, n_population=100, max_rules=5):
+    def __init__(self, n_population=100, max_rules=5, nepochs=100, elite_perc=0.05):
         self.n_population = n_population
         self.max_rules = max_rules
+        self.nepochs = nepochs
+        self.elite_perc = elite_perc
         self.population = []
+        self.best_solution = None
 
 
     def __init_population(self, feat_size):
@@ -477,6 +480,48 @@ class AlgoritmoGenetico(Clasificador):
         return n_hits/n_examples
 
 
+    
+    def __calculate_population_fitness(self, xdata, ydata, diccionario):
+        fitness_list = []
+
+        for individual in self.population:
+            fitness_list.append(self.__fitness(individual, xdata, ydata, diccionario))
+
+        return fitness_list
+
+
+
+    def __elitism(self, n_elite_inds=None):
+        elite = []
+
+        if n_elite_inds:
+            # Choose n_elite_inds (integer) best individuals
+
+        for ind in self.population:
+            # Choose self.elite_perc (percentage) best individuals
+        
+        return elite
+
+    
+
+    def __parent_selection(self):
+        ####
+        return parents
+
+    
+
+    def __crossover(self, parents):
+        ####
+        return parents
+
+
+
+    def __mutation(self, parents):
+        ####
+        return parents
+
+
+
 
     def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
         xdata = datosTrain[:,:-1] # all rows, all columns but last one
@@ -487,9 +532,27 @@ class AlgoritmoGenetico(Clasificador):
         # Creating initial population
         self.__init_population(feat_size)
 
-        #
+        for i in range(self.nepochs):
+            fitness_list = self.__calculate_population_fitness(xdata, ydata, diccionario)
+            # Elitism: best individuals get to next generation directly
+            elite_inds = self.__elitism(fitness_list)
+            # Parent selection: potential next generation is chosen randomly with replacement
+            #                   proportional to fitness
+            parents = self.__parent_selection(fitness_list)
+            # Crossover: progenitors are transformed crossing two individuals, to generate new solutions
+            parents = self.__crossover(parents)
+            # Mutation: progenitors are transformed making alterations on its genes
+            parents = self.__mutation(parents)
+            # Survivor selection: next generation is the union of progenitors + elite individuals
+            survivors = self.__survivor_selection(parents, elite_inds)
+            # Next generation
+            self.population = survivors
 
-    
+        # Getting best solution from final population
+        self.best_solution = self.__elitism(n_elite_inds=1)
+
+
+
     def clasifica(self,datosTest,atributosDiscretos,diccionario):
         xdata = datosTest[:,:-1] # all rows, all columns but last one
         ydata = datosTest[:,-1]  # all rows, just last column (class)
