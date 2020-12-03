@@ -507,16 +507,19 @@ class AlgoritmoGenetico(Clasificador):
             # Choose self.elite_perc (percentage) best individuals
             elite_size = math.floor(self.perc * len(self.population))
 
+        population_copy = self.population.copy()
+        fitness_list_copy = fitness_list.copy()
+
         n_extracted = 0
         while n_extracted < elite_size:
             # getting maximum fitness value
-            best_fitness_val = max(fitness_list)
+            best_fitness_val = max(fitness_list_copy)
             # getting index of individual with the highest fitness
-            best_fitness_ind = fitness_list.index(best_fitness_val)
+            best_fitness_ind = fitness_list_copy.index(best_fitness_val)
             # getting individual (and removing it from population) with highest fitness
-            best_ind = self.population.pop(best_fitness_ind)
+            best_ind = population_copy.pop(best_fitness_ind)
             # deleting its fitness from fitness_list
-            fitness_list.remove(best_fitness_val)
+            fitness_list_copy.remove(best_fitness_val)
             # adding best individual to elite set
             elite.append(best_ind)
             n_extracted += 1
@@ -525,19 +528,26 @@ class AlgoritmoGenetico(Clasificador):
 
     
 
-    def __parent_selection(self, fitness_list):
+    def __parent_selection(self, fitness_list, n_elite_inds=None):
+
+        if n_elite_inds:
+            # Choose n_elite_inds (integer) best individuals
+            elite_size = n_elite_inds
+        else:
+            # Choose self.elite_perc (percentage) best individuals
+            elite_size = math.floor(self.perc * len(self.population))
+
         # total fitness
         s = sum(fitness_list)
         # list of weighted fitness of each individual
         weighted_probs = [f/s for f in fitness_list]
-
         ## np.random.choice(a, n, replace=False, p=None)
         #       a := list of items to choose
         #       n := number of items to choose
         #       replace: if True, items are chosen with replacement
         #       p: the probabilities associated with each entry in a. Otherwise, they are chosen uniformly.
         ##
-        return np.random.choice(self.population, len(self.population), replace=True, p=weighted_probs)
+        return np.random.choice(self.population, len(self.population)-elite_size, replace=True, p=weighted_probs)
 
     
 
