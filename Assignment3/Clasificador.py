@@ -437,6 +437,42 @@ class AlgoritmoGenetico(Clasificador):
             # Inserting new individual to initial population
             self.population.append(new_individual)
 
+
+    def __clf_example(individual, example, diccionario):
+        # Keeping track of predicted class by each rule
+        predicted_classes = []
+        for rule in individual:
+            # a rule is a binary list, but a feature is represented by multiple bits
+            cum_idx = 0
+            activation = 1
+            # rule is activated if every feature matches
+            for j in range(n_feat):
+                # length of current feature
+                len_feat = len(diccionario[j])
+                # comparing feature encode with its corresponding rule
+                feat_and = np.bitwise_and(current_example[cum_idx:cum_idx+len_feat], rule[cum_idx:cum_idx+len_feat])
+                if sum(feat_and) == 0:
+                    # if the rule does not match, the rule does not activate
+                    activation = 0
+                    break
+                else:
+                    # jumping to next feature
+                    cum_idx += len_feat
+
+            if activation: # saving predicted class by this rule
+                predicted_classes.append(rule[-1])
+
+         # if the sum is larger than the half size of the list, it means the number of 1's is larger than 0's
+        if sum(predicted_classes) > len(predicted_classes)/2:
+            return 1 # predicted class = 1
+        # if the sum is smaller than the half size of the list, it means the number of 0's is larger than 1's
+        elif sum(predicted_classes) < len(predicted_classes)/2:
+            return 0 # predicted class = 0
+        else:
+            # zero rules activated or
+            #  the number of rules predicting class 1 is the same than the number of rules predicting class 0
+            return None
+
     
     def __fitness(self, individual, xdata, ydata, diccionario):
         n_examples, feat_size = xdata.shape # number of examples and length of each rule (after oneHotEncode)
@@ -447,40 +483,13 @@ class AlgoritmoGenetico(Clasificador):
         for i in range(n_examples):
             # For each example, we check if its well classifed or not
             current_example = xdata[i,:]
-            # Keeping track of predicted class by each rule
-            predicted_classes = []
-            for rule in individual:
-                # a rule is a binary list, but a feature is represented by multiple bits
-                cum_idx = 0
-                activation = 1
-                # rule is activated if every feature matches
-                for j in range(n_feat):
-                    # length of current feature
-                    len_feat = len(diccionario[j])
-                    # comparing feature encode with its corresponding rule
-                    feat_and = np.bitwise_and(current_example[cum_idx:cum_idx+len_feat], rule[cum_idx:cum_idx+len_feat])
-                    if sum(feat_and) == 0:
-                        # if the rule does not match, the rule does not activate
-                        activation = 0
-                        break
-                    else:
-                        # jumping to next feature
-                        cum_idx += len_feat
-    
-                if activation: # saving predicted class by this rule
-                    predicted_classes.append(rule[-1])
-            
-            # if there is none rules that have been activated
-            if predicted_classes == []:
-                continue
-            # if the sum is larger than the half size of the list, it means the number of 1's is larger than 0's
-            elif sum(predicted_classes) > len(predicted_classes)/2: # predicted class = 1
-                if ydata[i] == 1:
-                    n_hits += 1
-            # if the sum is smaller than the half size of the list, it means the number of 0's is larger than 1's
-            elif sum(predicted_classes) < len(predicted_classes)/2: # predicted class = 0
-                if ydata[i] == 0:
-                    n_hits += 1
+            # Checking the predicted class for the current data example given an individual
+            predicted_class = __clf_example(individual, current_example, diccionario)
+
+            if predicted_class==1 and ydata[i]==1:
+                n_hits += 1
+            elif predicted_class==0 and ydata[i]==0:
+                n_hits += 1
 
         # returning individual fitness, i.e., number of hits / total examples
         return n_hits/n_examples
@@ -594,7 +603,7 @@ class AlgoritmoGenetico(Clasificador):
             # Next generation
             self.population = survivors
 
-        # Getting best solution from final population
+        # Getting best solution from final population. Just survives the best individual
         self.best_solution = self.__elitism(n_elite_inds=1)
 
 
@@ -602,3 +611,18 @@ class AlgoritmoGenetico(Clasificador):
     def clasifica(self,datosTest,atributosDiscretos,diccionario):
         xdata = datosTest[:,:-1] # all rows, all columns but last one
         ydata = datosTest[:,-1]  # all rows, just last column (class)
+
+        pred = []
+
+        for example in xdata:
+            predicted_class = __clf_example(individual, current_example, diccionario)
+
+            if predicted_class is None:
+                # ¿? What decision do we make?
+            else:
+                pred.append(predicted_class)
+
+        return np.asarray(pred, dtype="object")
+
+        
+
