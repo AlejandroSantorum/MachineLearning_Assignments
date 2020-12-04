@@ -619,6 +619,7 @@ class AlgoritmoGenetico(Clasificador):
 
             if predicted_class is None:
                 # ¿? What decision do we make?
+                print("Debug")
             else:
                 pred.append(predicted_class)
 
