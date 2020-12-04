@@ -268,7 +268,7 @@ class ClasificadorVecinosProximos(Clasificador):
                     distances.append(scipy.spatial.distance.mahalanobis(xtest[idx_test,:],\
                                                                         self.xtrain[idx_train,:], self.invSigma))
                 else:
-                    raise Exception('The introduced distance is not available')
+                    raise ValueError('The introduced distance is not available')
             # Sorting distances list
             sorted_dist = sorted(distances)
             pred_aux = []
@@ -408,16 +408,24 @@ class ClasificadorRegresionLogisticaSK(Clasificador):
 class AlgoritmoGenetico(Clasificador):
     
 
-    def __init__(self, n_population=100, max_rules=5, nepochs=100, elite_perc=0.05):
+    def __init__(self, n_population=100, max_rules=5, nepochs=100, cross_prob=0.7, bitflip_prob=None, add_rule_prob=0.4, elite_perc=0.05):
         self.n_population = n_population
         self.max_rules = max_rules
         self.nepochs = nepochs
+        self.cross_prob = cross_prob
+        self.bitflip_prob = bitflip_prob
         self.elite_perc = elite_perc
         self.population = []
+        self.rules_len = None
         self.best_solution = None
+        if add_rule_prob >= 0.5:
+            raise ValueError('Parameter \'add_rule_prob\' must be in [0, 0.5). It cannot be greater or equal than 0.5')
+        else:
+            self.add_rule_prob = add_rule_prob
 
 
-    def __init_population(self, feat_size):
+
+    def __init_population(self):
         # Creating initial population of size 'self.n-population'
         for i in range(self.n_population):
             # Creating a new individual, represented as a list of rules
@@ -430,7 +438,7 @@ class AlgoritmoGenetico(Clasificador):
                 new_rule = []
                 while sum(new_rule)==0 or sum(new_rule)==len(new_rule):
                     # Creating a new rule as a random binary string of size 'feat_size' + 1 (predicted class)
-                    new_rule = random.choices([0,1], k=feat_size+1)
+                    new_rule = random.choices([0,1], k=self.rules_len)
                 # Inserting new rule to the new individual
                 new_individual.append(new_rule)
 
@@ -439,6 +447,7 @@ class AlgoritmoGenetico(Clasificador):
 
 
     def __clf_example(individual, example, diccionario):
+        n_feat = len(diccionario)-1 # number of features. Last dictionary is the class dict
         # Keeping track of predicted class by each rule
         predicted_classes = []
         for rule in individual:
@@ -473,10 +482,10 @@ class AlgoritmoGenetico(Clasificador):
             #  the number of rules predicting class 1 is the same than the number of rules predicting class 0
             return None
 
+
     
     def __fitness(self, individual, xdata, ydata, diccionario):
         n_examples, feat_size = xdata.shape # number of examples and length of each rule (after oneHotEncode)
-        n_feat = len(diccionario)-1 # number of features. Last dictionary is the class dict
 
         n_hits = 0 # number of training examples classified correctly by given individual
 
@@ -560,15 +569,78 @@ class AlgoritmoGenetico(Clasificador):
 
     
 
-    def __crossover(self, parents):
-        ####
+    def __crossover(self, parents, inter_rule_cross=False):
+        descendents = [] # list of descendets after crossovers
+
+        n_inds = len(parents) # number of parents
+
+        # looping over every pair of parents. If there is an odd number of parents, the last one is not crossed
+        for i in range(0, n_inds, 2):
+            if i != n_inds-1:
+                # selecting two parents
+                P1 = parents[i]
+                P2 = parent[i+1]
+                # flipping a coin with probability 'cross_prob' of getting 1 and with 1-'cross_prob' of getting 0
+                cross = np.random.choice([1,0], p=[self.cross_prob, 1-self.cross_prob])
+                if cross:
+                    n_rules1 = len(P1) # number of rules of parent1
+                    n_rules2 = len(P2) # number of rules of parent2
+                    cross_rule1 = np.random.randint(0, n_rules1) # selecting a rule to cross of parent1
+                    cross_rule2 = np.random.randint(0, n_rules2) # selecting a rule to cross of parent2
+                    # Now we switch between inter-rule crossover or intra-rule crossover
+                    # Selecting index of crossover
+                    if inter_rule_cross:
+                        cross_idx = 0 # inter-rule crossover
+                    else:
+                        cross_idx = np.random.randint(1, self.rules_len-1) # intra-rule crossover
+                    # Crossing parents to get descendets
+                    child1 = P1[:cross_rule1] + [P1[cross_rule1][:cross_idx] + P2[cross_rule2][cross_idx:]] + P2[cross_rule2+1:]
+                    child2 = P2[:cross_rule2] + [P2[cross_rule2][:cross_idx] + P1[cross_rule1][cross_idx:]] + P1[cross_rule1+1:]  
+                    # adding new childs to the descendents list
+                    descendents.append(child1)
+                    descendents.append(child2)  
+                else:
+                    # if we obtain 0, crossover does not occur, so the parents get to next step directly
+                    descendents.append(P1)
+                    descendents.append(P2)
+            else:
+                # there is an odd number of parents, so the last one gets to next step directly
+                descendents.append(parents[-1])
+
+        return descendents
+
+
+
+    def __mutation_bitflip(self, parents):
+        for individual in parents:
+            for rule in individual:
+                for bit in rule:
+                    # flipping a coin with probability 'bitflip_prob' of getting 1 and with 1-'cross_prob' of getting 0
+                    bitflip = np.random.choice([1,0], p=[self.bitflip_prob, 1-self.bitflip_prob])
+                    if bitflip: # flipping
+                        if bit==1: bit=0
+                        else: bit=1
+
         return parents
 
 
-
-    def __mutation(self, parents):
-        ####
+    
+    def __mutation_add_delete_rule(self, parents):
+        for individual in parents:
+            add_del = np.random.choice([1,-1, 0], p=[self.add_rule_prob, self.add_rule_prob, 1-2*self.add_rule_prob])
+            if add_del == 1: # Adding new rule
+                # Asserting that new rule cannot have EVERY gene equal 0 or 1
+                new_rule = []
+                while sum(new_rule)==0 or sum(new_rule)==len(new_rule):
+                    # Creating a new rule as a random binary string of size 'feat_size' + 1 (predicted class)
+                    new_rule = random.choices([0,1], k=self.rules_len)
+                individual.append(new_rule)
+            
+            elif add_del == -1: # Deleting a random rule from individual
+                del individual[random.randint(0, len(individual))]
+            
         return parents
+
 
 
     def __survivor_selection(self, parents, elite_inds):
@@ -584,8 +656,16 @@ class AlgoritmoGenetico(Clasificador):
 
         n_examples, feat_size = xdata.shape
 
+        # Now that we got the data, we can determine the rule length
+        self.rules_len = feat_size+1 # + 1 due to class value
+
+        # If the bitflip probability is not determined, it is set to 1/rule_length in order to
+        #   flip 1 bit per rule (on average).
+        if self.bitflip_prob is None:
+            self.bitflip_prob = 1/self.rules_len
+
         # Creating initial population
-        self.__init_population(feat_size)
+        self.__init_population()
 
         for i in range(self.nepochs):
             fitness_list = self.__calculate_population_fitness(xdata, ydata, diccionario)
@@ -595,11 +675,11 @@ class AlgoritmoGenetico(Clasificador):
             #                   proportional to fitness
             parents = self.__parent_selection(fitness_list)
             # Crossover: progenitors are transformed crossing two individuals, to generate new solutions
-            parents = self.__crossover(parents)
+            descendets = self.__crossover(parents)
             # Mutation: progenitors are transformed making alterations on its genes
-            parents = self.__mutation(parents)
+            descendets = self.__mutation(descendets)
             # Survivor selection: next generation is the union of progenitors + elite individuals
-            survivors = self.__survivor_selection(parents, elite_inds)
+            survivors = self.__survivor_selection(descendets, elite_inds)
             # Next generation
             self.population = survivors
 
@@ -619,6 +699,7 @@ class AlgoritmoGenetico(Clasificador):
 
             if predicted_class is None:
                 # ¿? What decision do we make?
+                pred.append(-1) # To be changed
                 print("Debug")
             else:
                 pred.append(predicted_class)
