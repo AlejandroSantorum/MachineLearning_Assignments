@@ -692,7 +692,6 @@ class AlgoritmoGenetico(Clasificador):
         self.__init_population()
 
         for i in range(self.nepochs):
-            print("Epoca ", i+1)
             fitness_list = self.__calculate_population_fitness(xdata, ydata, diccionario)
             # Elitism: best individuals get to next generation directly
             elite_inds = self.__elitism(fitness_list)
