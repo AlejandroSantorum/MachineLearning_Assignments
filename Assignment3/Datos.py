@@ -129,7 +129,6 @@ class Datos:
 
         # Concatenating encoded data matrix and classes
         datos_aux = np.array(np.concatenate((X_enc, Y[:,None]), axis=1), dtype=np.int32)
-        print(datos_aux)
         return datos_aux
 
 

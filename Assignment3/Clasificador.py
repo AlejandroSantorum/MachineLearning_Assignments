@@ -418,6 +418,7 @@ class AlgoritmoGenetico(Clasificador):
         self.population = []
         self.rules_len = None
         self.best_solution = None
+        self.max_prior = None
         if add_rule_prob >= 0.5:
             raise ValueError('Parameter \'add_rule_prob\' must be in [0, 0.5). It cannot be greater or equal than 0.5')
         else:
@@ -446,6 +447,7 @@ class AlgoritmoGenetico(Clasificador):
             self.population.append(new_individual)
 
 
+    @staticmethod
     def __clf_example(individual, example, diccionario):
         n_feat = len(diccionario)-1 # number of features. Last dictionary is the class dict
         # Keeping track of predicted class by each rule
@@ -459,7 +461,8 @@ class AlgoritmoGenetico(Clasificador):
                 # length of current feature
                 len_feat = len(diccionario[j])
                 # comparing feature encode with its corresponding rule
-                feat_and = np.bitwise_and(current_example[cum_idx:cum_idx+len_feat], rule[cum_idx:cum_idx+len_feat])
+
+                feat_and = np.bitwise_and(example[cum_idx:cum_idx+len_feat], rule[cum_idx:cum_idx+len_feat])
                 if sum(feat_and) == 0:
                     # if the rule does not match, the rule does not activate
                     activation = 0
@@ -471,15 +474,18 @@ class AlgoritmoGenetico(Clasificador):
             if activation: # saving predicted class by this rule
                 predicted_classes.append(rule[-1])
 
+        s = sum(predicted_classes)
+        l = len(predicted_classes)/2
          # if the sum is larger than the half size of the list, it means the number of 1's is larger than 0's
-        if sum(predicted_classes) > len(predicted_classes)/2:
+        if s > l:
             return 1 # predicted class = 1
         # if the sum is smaller than the half size of the list, it means the number of 0's is larger than 1's
-        elif sum(predicted_classes) < len(predicted_classes)/2:
+        elif s < l:
             return 0 # predicted class = 0
+        elif s == l:
+            return -1 # the number of rules predicting class 1 is the same than the number of rules predicting class 0 
         else:
-            # zero rules activated or
-            #  the number of rules predicting class 1 is the same than the number of rules predicting class 0
+            # zero rules activated
             return None
 
 
@@ -493,7 +499,7 @@ class AlgoritmoGenetico(Clasificador):
             # For each example, we check if its well classifed or not
             current_example = xdata[i,:]
             # Checking the predicted class for the current data example given an individual
-            predicted_class = __clf_example(individual, current_example, diccionario)
+            predicted_class = AlgoritmoGenetico.__clf_example(individual, current_example, diccionario)
 
             if predicted_class==1 and ydata[i]==1:
                 n_hits += 1
@@ -523,7 +529,7 @@ class AlgoritmoGenetico(Clasificador):
             elite_size = n_elite_inds
         else:
             # Choose self.elite_perc (percentage) best individuals
-            elite_size = math.floor(self.perc * len(self.population))
+            elite_size = math.floor(self.elite_perc * len(self.population))
 
         population_copy = self.population.copy()
         fitness_list_copy = fitness_list.copy()
@@ -553,7 +559,7 @@ class AlgoritmoGenetico(Clasificador):
             elite_size = n_elite_inds
         else:
             # Choose self.elite_perc (percentage) best individuals
-            elite_size = math.floor(self.perc * len(self.population))
+            elite_size = math.floor(self.elite_perc * len(self.population))
 
         # total fitness
         s = sum(fitness_list)
@@ -579,7 +585,7 @@ class AlgoritmoGenetico(Clasificador):
             if i != n_inds-1:
                 # selecting two parents
                 P1 = parents[i]
-                P2 = parent[i+1]
+                P2 = parents[i+1]
                 # flipping a coin with probability 'cross_prob' of getting 1 and with 1-'cross_prob' of getting 0
                 cross = np.random.choice([1,0], p=[self.cross_prob, 1-self.cross_prob])
                 if cross:
@@ -595,7 +601,11 @@ class AlgoritmoGenetico(Clasificador):
                         cross_idx = np.random.randint(1, self.rules_len-1) # intra-rule crossover
                     # Crossing parents to get descendets
                     child1 = P1[:cross_rule1] + [P1[cross_rule1][:cross_idx] + P2[cross_rule2][cross_idx:]] + P2[cross_rule2+1:]
-                    child2 = P2[:cross_rule2] + [P2[cross_rule2][:cross_idx] + P1[cross_rule1][cross_idx:]] + P1[cross_rule1+1:]  
+                    child2 = P2[:cross_rule2] + [P2[cross_rule2][:cross_idx] + P1[cross_rule1][cross_idx:]] + P1[cross_rule1+1:]
+                    if len(child1) > self.max_rules:
+                        child1 = child1[:self.max_rules]
+                    if len(child2) > self.max_rules:
+                        child2 = child2[:self.max_rules]
                     # adding new childs to the descendents list
                     descendents.append(child1)
                     descendents.append(child2)  
@@ -628,7 +638,7 @@ class AlgoritmoGenetico(Clasificador):
     def __mutation_add_delete_rule(self, parents):
         for individual in parents:
             add_del = np.random.choice([1,-1, 0], p=[self.add_rule_prob, self.add_rule_prob, 1-2*self.add_rule_prob])
-            if add_del == 1: # Adding new rule
+            if add_del == 1 and len(individual) < self.max_rules: # Adding new rule
                 # Asserting that new rule cannot have EVERY gene equal 0 or 1
                 new_rule = []
                 while sum(new_rule)==0 or sum(new_rule)==len(new_rule):
@@ -637,9 +647,17 @@ class AlgoritmoGenetico(Clasificador):
                 individual.append(new_rule)
             
             elif add_del == -1: # Deleting a random rule from individual
-                del individual[random.randint(0, len(individual))]
+                if len(individual) > 1: # we cannot delete a rule from an individual if it has an unique rule
+                    del individual[np.random.randint(0, len(individual))]
             
         return parents
+
+    
+
+    def __mutation(self, parents):
+        descendents = self.__mutation_bitflip(parents)
+        descendents = self.__mutation_add_delete_rule(descendents)
+        return descendents
 
 
 
@@ -656,6 +674,12 @@ class AlgoritmoGenetico(Clasificador):
 
         n_examples, feat_size = xdata.shape
 
+        n_class_1 = sum(ydata)
+        if n_class_1 > n_examples:
+            self.max_prior = 1
+        else:
+            self.max_prior = 0
+
         # Now that we got the data, we can determine the rule length
         self.rules_len = feat_size+1 # + 1 due to class value
 
@@ -668,6 +692,7 @@ class AlgoritmoGenetico(Clasificador):
         self.__init_population()
 
         for i in range(self.nepochs):
+            print("Epoca ", i+1)
             fitness_list = self.__calculate_population_fitness(xdata, ydata, diccionario)
             # Elitism: best individuals get to next generation directly
             elite_inds = self.__elitism(fitness_list)
@@ -684,7 +709,8 @@ class AlgoritmoGenetico(Clasificador):
             self.population = survivors
 
         # Getting best solution from final population. Just survives the best individual
-        self.best_solution = self.__elitism(n_elite_inds=1)
+        fitness_list = self.__calculate_population_fitness(xdata, ydata, diccionario)
+        self.best_solution = self.__elitism(fitness_list, n_elite_inds=1)[0]
 
 
 
@@ -695,12 +721,13 @@ class AlgoritmoGenetico(Clasificador):
         pred = []
 
         for example in xdata:
-            predicted_class = __clf_example(individual, current_example, diccionario)
+            predicted_class = AlgoritmoGenetico.__clf_example(self.best_solution, example, diccionario)
+
 
             if predicted_class is None:
-                # ¿? What decision do we make?
-                pred.append(-1) # To be changed
-                print("Debug")
+                pred.append(-1)
+            elif predicted_class == -1: # same number of votes
+                pred.append(self.max_prior)
             else:
                 pred.append(predicted_class)
 
