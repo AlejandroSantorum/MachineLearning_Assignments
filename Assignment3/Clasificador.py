@@ -407,12 +407,33 @@ class ClasificadorRegresionLogisticaSK(Clasificador):
 
 class AlgoritmoGenetico(Clasificador):
     
-
-    def __init__(self, n_population=100, max_rules=5, nepochs=100, cross_prob=0.7, bitflip_prob=None, add_rule_prob=0.4, elite_perc=0.05):
+    
+    def __init__(self, n_population=100, max_rules=5, nepochs=100, cross_prob=0.7, cross_strat='both',
+                 bitflip_prob=None, add_rule_prob=0.4, elite_perc=0.05):
+        '''
+            CONSTRUCTOR INPUT ARGS:
+                n_population: size of the population (fixed in the whole evolution)
+                max_rules: maximum number of rules per individual of the population
+                nepochs: number of epochs, i.e., number of generations
+                cross_prob: probability of executing crossover of individuals by epoch.
+                cross_strat:
+                    if cross_strat='inter' -> inter-rule crossover is executed
+                    if cross_strat='intra' -> intra-rule crossover is executed
+                    if cross_strat='both' -> both intra-rule and inter-rule crossover is executed (default)
+                bitflip_prob: probability of executing bitflip mutation per bit (each bit has a
+                              probability 'bitflip_prob' of being flipped). If bitflip_prob is set to None
+                              it is calculated in training to be equal 1/(number of bit per rule) in order
+                              to mute a single bit per rule on average.
+                add_rule_prob: A rule is added to an individual with probability of 'add_rule_prob'.
+                               In addiction, a rule is deleted from an individual with probability of 'add_rule_prob'.
+                               An individual stays the same with probability 1 - 2*add_rule_prob. So 'add_rule_prob' has to be < 0.5
+                elite_perc: percentage of population that gets to next generation directly thanks elitism (best fitness individuals).
+        '''
         self.n_population = n_population
         self.max_rules = max_rules
         self.nepochs = nepochs
         self.cross_prob = cross_prob
+        self.cross_strat = cross_strat
         self.bitflip_prob = bitflip_prob
         self.elite_perc = elite_perc
         self.population = []
@@ -553,13 +574,8 @@ class AlgoritmoGenetico(Clasificador):
     
 
     def __parent_selection(self, fitness_list, n_elite_inds=None):
-
-        if n_elite_inds:
-            # Choose n_elite_inds (integer) best individuals
-            elite_size = n_elite_inds
-        else:
-            # Choose self.elite_perc (percentage) best individuals
-            elite_size = math.floor(self.elite_perc * len(self.population))
+        # number of individuals that gets to next generation directly by elitism
+        elite_size = math.floor(self.elite_perc * len(self.population))
 
         # total fitness
         s = sum(fitness_list)
@@ -699,9 +715,12 @@ class AlgoritmoGenetico(Clasificador):
             #                   proportional to fitness
             parents = self.__parent_selection(fitness_list)
             # Crossover: progenitors are transformed crossing two individuals, to generate new solutions
-            descendets = self.__crossover(parents)
+            if self.cross_strat=='intra' or self.cross_strat=='both':   # intra-rule crossover
+                parents = self.__crossover(parents, inter_rule_cross=False)
+            if self.cross_strat=='inter' or self.cross_strat=='both':   # inter-rule crossover
+                parents = self.__crossover(parents, inter_rule_cross=True)
             # Mutation: progenitors are transformed making alterations on its genes
-            descendets = self.__mutation(descendets)
+            descendets = self.__mutation(parents)
             # Survivor selection: next generation is the union of progenitors + elite individuals
             survivors = self.__survivor_selection(descendets, elite_inds)
             # Next generation
