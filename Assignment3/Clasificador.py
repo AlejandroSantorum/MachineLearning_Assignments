@@ -439,6 +439,8 @@ class AlgoritmoGenetico(Clasificador):
         self.population = []
         self.rules_len = None
         self.best_solution = None
+        self.best_fitness_evol = []
+        self.mean_fitness_evol = []
         self.max_prior = None
         if add_rule_prob >= 0.5:
             raise ValueError('Parameter \'add_rule_prob\' must be in [0, 0.5). It cannot be greater or equal than 0.5')
@@ -538,6 +540,8 @@ class AlgoritmoGenetico(Clasificador):
         for individual in self.population:
             fitness_list.append(self.__fitness(individual, xdata, ydata, diccionario))
 
+        # calculating and storing population fitness mean
+        self.mean_fitness_evol.append(np.mean(fitness_list))
         return fitness_list
 
 
@@ -559,6 +563,9 @@ class AlgoritmoGenetico(Clasificador):
         while n_extracted < elite_size:
             # getting maximum fitness value
             best_fitness_val = max(fitness_list_copy)
+            if n_extracted == 0:
+                # storing best individual fitness
+                self.best_fitness_evol.append(best_fitness_val)
             # getting index of individual with the highest fitness
             best_fitness_ind = fitness_list_copy.index(best_fitness_val)
             # getting individual (and removing it from population) with highest fitness
@@ -725,6 +732,7 @@ class AlgoritmoGenetico(Clasificador):
             survivors = self.__survivor_selection(descendets, elite_inds)
             # Next generation
             self.population = survivors
+
 
         # Getting best solution from final population. Just survives the best individual
         fitness_list = self.__calculate_population_fitness(xdata, ydata, diccionario)
