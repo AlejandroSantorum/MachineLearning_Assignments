@@ -420,6 +420,7 @@ class AlgoritmoGenetico(Clasificador):
                     if cross_strat='inter' -> inter-rule crossover is executed
                     if cross_strat='intra' -> intra-rule crossover is executed
                     if cross_strat='both' -> both intra-rule and inter-rule crossover is executed (default)
+                    if cross_strat='uniform' -> uniform crossover plus tournament selection is executed
                 bitflip_prob: probability of executing bitflip mutation per bit (each bit has a
                               probability 'bitflip_prob' of being flipped). If bitflip_prob is set to None
                               it is calculated in training to be equal 1/(number of bit per rule) in order
@@ -643,6 +644,71 @@ class AlgoritmoGenetico(Clasificador):
         return descendents
 
 
+        
+    def __uniform_crossover(self, parents, xdata, ydata, diccionario):
+        descendents = [] # list of descendets after crossovers
+
+        n_inds = len(parents) # number of parents
+        
+        # looping over every pair of parents. If there is an odd number of parents, the last one is not crossed
+        for i in range(0, n_inds, 2):
+            if i != n_inds-1:
+                # selecting two parents
+                P1 = parents[i]
+                P2 = parents[i+1]
+                minr = min(len(P1), len(P2))
+                # flipping a coin with probability 'cross_prob' of getting 1 and with 1-'cross_prob' of getting 0
+                cross = np.random.choice([1,0], p=[self.cross_prob, 1-self.cross_prob])
+                if cross:
+                    if(len(P1)>len(P2)):
+                        H3 = P1[minr:]
+                    else:
+                        H3 = P2[minr:]
+                    
+                    H1 = []
+                    H2 = []
+                    for j in range(minr):
+                        H1.append([])
+                        H2.append([])
+                        for i in range(len(P1[j])):
+                            rnd = np.random.randint(0, 2)
+                            if (rnd == 0):
+                                H1[j].append(P1[j][i])
+                            else:
+                                H1[j].append(P2[j][i])
+
+                            rnd = np.random.randint(0, 2)
+                            if (rnd == 0):
+                                H2[j].append(P1[j][i])
+                            else:
+                                H2[j].append(P2[j][i])                                                
+                        
+                    # Here we decide wich 2 child to append according to fitness
+                    fit_list = []
+
+                    fit_list.append(self.__fitness(H1, xdata, ydata, diccionario))
+                    fit_list.append(self.__fitness(H2, xdata, ydata, diccionario)) 
+                    fit_list.append(self.__fitness(H3, xdata, ydata, diccionario)) 
+                    i = fit_list.index(min(fit_list))
+                    if i == 0:
+                        descendents.append(H2)
+                        descendents.append(H3)
+                    elif i == 1:
+                        descendents.append(H1)
+                        descendents.append(H3)
+                    elif i == 2:
+                        descendents.append(H1)
+                        descendents.append(H2)                     
+                    
+                else:
+                    # if we obtain 0, crossover does not occur, so the parents get to next step directly
+                    descendents.append(P1)
+                    descendents.append(P2)
+            else:
+                # there is an odd number of parents, so the last one gets to next step directly
+                descendents.append(parents[-1])
+
+        return descendents
 
     def __mutation_bitflip(self, parents):
         for individual in parents:
@@ -726,6 +792,8 @@ class AlgoritmoGenetico(Clasificador):
                 parents = self.__crossover(parents, inter_rule_cross=False)
             if self.cross_strat=='inter' or self.cross_strat=='both':   # inter-rule crossover
                 parents = self.__crossover(parents, inter_rule_cross=True)
+            if self.cross_strat=='uniform':
+                parents = self.__uniform_crossover(parents, xdata, ydata, diccionario)
             # Mutation: progenitors are transformed making alterations on its genes
             descendets = self.__mutation(parents)
             # Survivor selection: next generation is the union of progenitors + elite individuals
