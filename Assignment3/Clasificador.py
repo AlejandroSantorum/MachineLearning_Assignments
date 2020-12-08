@@ -18,6 +18,7 @@ import scipy
 from scipy.stats import norm
 import math
 from collections import Counter
+import copy
 
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.naive_bayes import GaussianNB
@@ -546,7 +547,6 @@ class AlgoritmoGenetico(Clasificador):
         return fitness_list
 
 
-
     def __elitism(self, fitness_list, n_elite_inds=None):
         elite = []
 
@@ -557,8 +557,8 @@ class AlgoritmoGenetico(Clasificador):
             # Choose self.elite_perc (percentage) best individuals
             elite_size = math.floor(self.elite_perc * len(self.population))
 
-        population_copy = self.population.copy()
-        fitness_list_copy = fitness_list.copy()
+        population_copy = copy.deepcopy(self.population)
+        fitness_list_copy = copy.deepcopy(fitness_list)
 
         n_extracted = 0
         while n_extracted < elite_size:
@@ -568,9 +568,9 @@ class AlgoritmoGenetico(Clasificador):
                 # storing best individual fitness
                 self.best_fitness_evol.append(best_fitness_val)
             # getting index of individual with the highest fitness
-            best_fitness_ind = fitness_list_copy.index(best_fitness_val)
+            best_ind_idx = fitness_list_copy.index(best_fitness_val)
             # getting individual (and removing it from population) with highest fitness
-            best_ind = population_copy.pop(best_fitness_ind)
+            best_ind = population_copy.pop(best_ind_idx)
             # deleting its fitness from fitness_list
             fitness_list_copy.remove(best_fitness_val)
             # adding best individual to elite set
@@ -580,7 +580,6 @@ class AlgoritmoGenetico(Clasificador):
         return elite
 
     
-
     def __parent_selection(self, fitness_list, n_elite_inds=None):
         # number of individuals that gets to next generation directly by elitism
         elite_size = math.floor(self.elite_perc * len(self.population))
@@ -598,7 +597,6 @@ class AlgoritmoGenetico(Clasificador):
         return np.random.choice(self.population, len(self.population)-elite_size, replace=True, p=weighted_probs)
 
     
-
     def __crossover(self, parents, inter_rule_cross=False):
         descendents = [] # list of descendets after crossovers
 
@@ -643,8 +641,7 @@ class AlgoritmoGenetico(Clasificador):
 
         return descendents
 
-
-        
+  
     def __uniform_crossover(self, parents, xdata, ydata, diccionario):
         descendents = [] # list of descendets after crossovers
 
@@ -710,6 +707,7 @@ class AlgoritmoGenetico(Clasificador):
 
         return descendents
 
+
     def __mutation_bitflip(self, parents):
         for individual in parents:
             for rule in individual:
@@ -722,8 +720,7 @@ class AlgoritmoGenetico(Clasificador):
 
         return parents
 
-
-    
+  
     def __mutation_add_delete_rule(self, parents):
         for individual in parents:
             add_del = np.random.choice([1,-1, 0], p=[self.add_rule_prob, self.add_rule_prob, 1-2*self.add_rule_prob])
@@ -742,12 +739,10 @@ class AlgoritmoGenetico(Clasificador):
         return parents
 
     
-
     def __mutation(self, parents):
         descendents = self.__mutation_bitflip(parents)
         descendents = self.__mutation_add_delete_rule(descendents)
         return descendents
-
 
 
     def __survivor_selection(self, parents, elite_inds):
