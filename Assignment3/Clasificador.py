@@ -424,7 +424,7 @@ class AlgoritmoGenetico(Clasificador):
                     if cross_strat='uniform' -> uniform crossover plus tournament selection is executed
                 bitflip_prob: probability of executing bitflip mutation per bit (each bit has a
                               probability 'bitflip_prob' of being flipped). If bitflip_prob is set to None
-                              it is calculated in training to be equal 1/(number of bit per rule) in order
+                              it is calculated in training to be equal 1/(number of bits per rule) in order
                               to mute a single bit per rule on average.
                 add_rule_prob: A rule is added to an individual with probability of 'add_rule_prob'.
                                In addiction, a rule is deleted from an individual with probability of 'add_rule_prob'.
@@ -724,7 +724,7 @@ class AlgoritmoGenetico(Clasificador):
     def __mutation_add_delete_rule(self, parents):
         for individual in parents:
             add_del = np.random.choice([1,-1, 0], p=[self.add_rule_prob, self.add_rule_prob, 1-2*self.add_rule_prob])
-            if add_del == 1 and len(individual) < self.max_rules: # Adding new rule
+            if add_del==1 and len(individual)<self.max_rules: # Adding new rule
                 # Asserting that new rule cannot have EVERY gene equal 0 or 1
                 new_rule = []
                 while sum(new_rule)==0 or sum(new_rule)==len(new_rule):
@@ -732,9 +732,9 @@ class AlgoritmoGenetico(Clasificador):
                     new_rule = random.choices([0,1], k=self.rules_len)
                 individual.append(new_rule)
             
-            elif add_del == -1: # Deleting a random rule from individual
-                if len(individual) > 1: # we cannot delete a rule from an individual if it has an unique rule
-                    del individual[np.random.randint(0, len(individual))]
+            elif add_del == -1 and len(individual)>1: # Deleting a random rule from individual
+                # we cannot delete a rule from an individual if it has an unique rule
+                del individual[np.random.randint(0, len(individual))]
             
         return parents
 

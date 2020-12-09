@@ -22,7 +22,15 @@ from sklearn.preprocessing import OneHotEncoder
 class Datos:
 
     # TODO: procesar el fichero para asignar correctamente las variables nominalAtributos, datos y diccionarios
-    def __init__(self, nombreFichero, normalize=False, col_custom_dtypes=None, allNominal=False):
+    def __init__(self, nombreFichero, normalize=False, col_custom_dtypes=None):
+        '''
+            CONSTRUCTOR INPUT ARGS:
+                nombreFichero: path to file containing the data
+                normalize: boolean parameter. If set to True, data is normalized after reading. Default is False.
+                col_custom_dtypes: dictionary containing data type for each column.
+                                   For example, {'a': np.float64, 'b': np.int32, 'class': str}
+                                   for more information: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
+        '''
         # Attributes
         self.datos = None
         self.nominalAtributos = None
@@ -41,20 +49,14 @@ class Datos:
         # 'nominalAtributos' will contain True, False if the feature is an integer or a real number.
         self.nominalAtributos = []
         example_row = data_csv.values[1]
-
-        if allNominal:
-            for item in example_row:
+         
+        for item in example_row: # all atributes (including class)
+            if isinstance(item, str): # nominal feature
                 self.nominalAtributos.append(True)
-        else:         
-            for item in example_row[:-1]: # all atributes, but not the class
-                if isinstance(item, str): # nominal feature
-                    self.nominalAtributos.append(True)
-                elif isinstance(item, int) or isinstance(item, float): # integer or real feature
-                    self.nominalAtributos.append(False)
-                else: # feature neither nominal nor integer nor real
-                    raise ValueError('Tipo de dato diferente a nominal, entero o real')
-            # the class is always nominal
-            self.nominalAtributos.append(True)
+            elif isinstance(item, int) or isinstance(item, float): # integer or real feature
+                self.nominalAtributos.append(False)
+            else: # feature neither nominal nor integer nor real
+                raise ValueError('Tipo de dato diferente a nominal, entero o real')
 
         # building 'diccionario' variable: list of dictionaries. For each nominal feature a dictionary is built:
         # each key will correspond with an unique nominal and its value is the numerical representation of that key/nominal.
