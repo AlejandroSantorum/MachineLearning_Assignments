@@ -410,7 +410,7 @@ class AlgoritmoGenetico(Clasificador):
     
     
     def __init__(self, n_population=100, max_rules=5, nepochs=100, cross_prob=0.7, cross_strat='both',
-                 bitflip_prob=None, add_rule_prob=0.4, elite_perc=0.05):
+                 bitflip_prob=None, add_rule_prob=0.3, elite_perc=0.05, shuffle_rules=False, verbose=False):
         '''
             CONSTRUCTOR INPUT ARGS:
                 n_population: size of the population (fixed in the whole evolution)
@@ -430,6 +430,10 @@ class AlgoritmoGenetico(Clasificador):
                                In addiction, a rule is deleted from an individual with probability of 'add_rule_prob'.
                                An individual stays the same with probability 1 - 2*add_rule_prob. So 'add_rule_prob' has to be < 0.5
                 elite_perc: percentage of population that gets to next generation directly thanks elitism (best fitness individuals).
+                shuffle_rules: Boolean. If set to True, rules of an individual are shuffled before crossover so that it does not
+                               depend on the order of the rules. Default is False.
+                verbose: Boolean. If set to True, population mean fitness and best individual fitness are printed
+                                  every epoch. Default is False.
         '''
         self.n_population = n_population
         self.max_rules = max_rules
@@ -438,6 +442,8 @@ class AlgoritmoGenetico(Clasificador):
         self.cross_strat = cross_strat
         self.bitflip_prob = bitflip_prob
         self.elite_perc = elite_perc
+        self.shuffle_rules = shuffle_rules
+        self.verbose = verbose
         self.population = []
         self.rules_len = None
         self.best_solution = None
@@ -542,8 +548,6 @@ class AlgoritmoGenetico(Clasificador):
         for individual in self.population:
             fitness_list.append(self.__fitness(individual, xdata, ydata, diccionario))
 
-        # calculating and storing population fitness mean
-        self.mean_fitness_evol.append(np.mean(fitness_list))
         return fitness_list
 
 
@@ -567,6 +571,7 @@ class AlgoritmoGenetico(Clasificador):
             if n_extracted == 0:
                 # storing best individual fitness
                 self.best_fitness_evol.append(best_fitness_val)
+                if self.verbose: print('\tBest individual fitness:', best_fitness_val)
             # getting index of individual with the highest fitness
             best_ind_idx = fitness_list_copy.index(best_fitness_val)
             # getting individual (and removing it from population) with highest fitness
@@ -602,15 +607,20 @@ class AlgoritmoGenetico(Clasificador):
 
         n_inds = len(parents) # number of parents
 
-        # looping over every pair of parents. If there is an odd number of parents, the last one is not crossed
+        # Looping over every pair of parents. If there is an odd number of parents, the last one is not crossed
         for i in range(0, n_inds, 2):
             if i != n_inds-1:
-                # selecting two parents
+                # Selecting two parents
                 P1 = parents[i]
                 P2 = parents[i+1]
-                # flipping a coin with probability 'cross_prob' of getting 1 and with 1-'cross_prob' of getting 0
+                # Flipping a coin with probability 'cross_prob' of getting 1 and with 1-'cross_prob' of getting 0
                 cross = np.random.choice([1,0], p=[self.cross_prob, 1-self.cross_prob])
                 if cross:
+                    # If shuffle_rules are set to True, each individual rules are shuffled so
+                    # crossover doesn't depend on the order of the rules
+                    if self.shuffle_rules:
+                        np.random.shuffle(P1)
+                        np.random.shuffle(P2)
                     n_rules1 = len(P1) # number of rules of parent1
                     n_rules2 = len(P2) # number of rules of parent2
                     cross_rule1 = np.random.randint(0, n_rules1) # selecting a rule to cross of parent1
@@ -624,19 +634,20 @@ class AlgoritmoGenetico(Clasificador):
                     # Crossing parents to get descendets
                     child1 = P1[:cross_rule1] + [P1[cross_rule1][:cross_idx] + P2[cross_rule2][cross_idx:]] + P2[cross_rule2+1:]
                     child2 = P2[:cross_rule2] + [P2[cross_rule2][:cross_idx] + P1[cross_rule1][cross_idx:]] + P1[cross_rule1+1:]
+                    # If the number of rules of any child is larger than the maximum number of rules, the child is truncated
                     if len(child1) > self.max_rules:
                         child1 = child1[:self.max_rules]
                     if len(child2) > self.max_rules:
                         child2 = child2[:self.max_rules]
-                    # adding new childs to the descendents list
+                    # Adding new children to the descendents list
                     descendents.append(child1)
                     descendents.append(child2)  
                 else:
-                    # if we obtain 0, crossover does not occur, so the parents get to next step directly
+                    # If we obtain 0, crossover does not occur, so the parents get to next step directly
                     descendents.append(P1)
                     descendents.append(P2)
             else:
-                # there is an odd number of parents, so the last one gets to next step directly
+                # There is an odd number of parents, so the last one gets to next step directly
                 descendents.append(parents[-1])
 
         return descendents
@@ -647,62 +658,71 @@ class AlgoritmoGenetico(Clasificador):
 
         n_inds = len(parents) # number of parents
         
-        # looping over every pair of parents. If there is an odd number of parents, the last one is not crossed
+        # Looping over every pair of parents. If there is an odd number of parents, the last one is not crossed
         for i in range(0, n_inds, 2):
             if i != n_inds-1:
                 # selecting two parents
                 P1 = parents[i]
                 P2 = parents[i+1]
                 minr = min(len(P1), len(P2))
-                # flipping a coin with probability 'cross_prob' of getting 1 and with 1-'cross_prob' of getting 0
+                # Flipping a coin with probability 'cross_prob' of getting 1 and with 1-'cross_prob' of getting 0
                 cross = np.random.choice([1,0], p=[self.cross_prob, 1-self.cross_prob])
                 if cross:
-                    if(len(P1)>len(P2)):
-                        H3 = P1[minr:]
+                    # If shuffle_rules are set to True, each individual rules are shuffled so
+                    # crossover doesn't depend on the order of the rules
+                    if self.shuffle_rules:
+                        np.random.shuffle(P1)
+                        np.random.shuffle(P2)
+
+                    # Third child is formed by the remaining rules of the largest parent
+                    if len(P1) > len(P2):
+                        child3 = P1[minr:]
                     else:
-                        H3 = P2[minr:]
+                        child3 = P2[minr:]
                     
-                    H1 = []
-                    H2 = []
+                    # Child 1 and child 2 are the result of a uniform crossover
+                    child1 = []
+                    child2 = []
+                    # Getting a sequence of 0's and 1's of the same length as the rules
+                    uniform_choices = np.random.choice([1,0], size=self.rules_len)
                     for j in range(minr):
-                        H1.append([])
-                        H2.append([])
-                        for i in range(len(P1[j])):
-                            rnd = np.random.randint(0, 2)
-                            if (rnd == 0):
-                                H1[j].append(P1[j][i])
-                            else:
-                                H1[j].append(P2[j][i])
-
-                            rnd = np.random.randint(0, 2)
-                            if (rnd == 0):
-                                H2[j].append(P1[j][i])
-                            else:
-                                H2[j].append(P2[j][i])                                                
+                        # Building children new rules
+                        r1 = []
+                        r2 = []
+                        for k in range(self.rules_len):
+                            # If it is 1, child1 gets its bit from parent1 and child2 from parent2
+                            if uniform_choices[k] == 1:
+                                r1.append(P1[j][k])
+                                r2.append(P2[j][k])
+                            # If it is 0, child1 gets its bit from parent2 and child2 from parent1
+                            elif uniform_choices[k] == 0:
+                                r1.append(P2[j][k])
+                                r2.append(P1[j][k])
+                        child1.append(r1)
+                        child2.append(r2)                                             
                         
-                    # Here we decide wich 2 child to append according to fitness
+                    # We execute a tournament to decide what 2 children get to next step
                     fit_list = []
-
-                    fit_list.append(self.__fitness(H1, xdata, ydata, diccionario))
-                    fit_list.append(self.__fitness(H2, xdata, ydata, diccionario)) 
-                    fit_list.append(self.__fitness(H3, xdata, ydata, diccionario)) 
+                    fit_list.append(self.__fitness(child1, xdata, ydata, diccionario))
+                    fit_list.append(self.__fitness(child2, xdata, ydata, diccionario)) 
+                    fit_list.append(self.__fitness(child3, xdata, ydata, diccionario)) 
                     i = fit_list.index(min(fit_list))
+                    # Adding to descendents list the two best children (tournament strategy)
                     if i == 0:
-                        descendents.append(H2)
-                        descendents.append(H3)
+                        descendents.append(child2)
+                        descendents.append(child3)
                     elif i == 1:
-                        descendents.append(H1)
-                        descendents.append(H3)
+                        descendents.append(child1)
+                        descendents.append(child3)
                     elif i == 2:
-                        descendents.append(H1)
-                        descendents.append(H2)                     
-                    
+                        descendents.append(child1)
+                        descendents.append(child2)                     
                 else:
-                    # if we obtain 0, crossover does not occur, so the parents get to next step directly
+                    # If we obtain 0, crossover does not occur, so the parents get to next step directly
                     descendents.append(P1)
                     descendents.append(P2)
             else:
-                # there is an odd number of parents, so the last one gets to next step directly
+                # There is an odd number of parents, so the last one gets to next step directly
                 descendents.append(parents[-1])
 
         return descendents
@@ -751,7 +771,6 @@ class AlgoritmoGenetico(Clasificador):
 
 
 
-
     def entrenamiento(self,datosTrain,atributosDiscretos,diccionario):
         xdata = datosTrain[:,:-1] # all rows, all columns but last one
         ydata = datosTrain[:,-1]  # all rows, just last column (class)
@@ -776,7 +795,14 @@ class AlgoritmoGenetico(Clasificador):
         self.__init_population()
 
         for i in range(self.nepochs):
+            # Calculating population fitness
             fitness_list = self.__calculate_population_fitness(xdata, ydata, diccionario)
+            # Storing mean population fitness
+            mean_fit = np.mean(fitness_list)
+            self.mean_fitness_evol.append(mean_fit)
+            if self.verbose: 
+                print('EPOCH NUMBER', i+1)
+                print('\tMean population fitness:', mean_fit)
             # Elitism: best individuals get to next generation directly
             elite_inds = self.__elitism(fitness_list)
             # Parent selection: potential next generation is chosen randomly with replacement
@@ -811,7 +837,6 @@ class AlgoritmoGenetico(Clasificador):
 
         for example in xdata:
             predicted_class = AlgoritmoGenetico.__clf_example(self.best_solution, example, diccionario)
-
 
             if predicted_class is None:
                 pred.append(-1)
