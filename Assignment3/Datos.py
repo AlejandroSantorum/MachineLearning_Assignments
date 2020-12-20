@@ -49,7 +49,7 @@ class Datos:
         # 'nominalAtributos' will contain True, False if the feature is an integer or a real number.
         self.nominalAtributos = []
         example_row = data_csv.values[1]
-         
+ 
         for item in example_row: # all atributes (including class)
             if isinstance(item, str): # nominal feature
                 self.nominalAtributos.append(True)
