@@ -122,6 +122,16 @@ class Datos:
                     datos[:,idx] -= self.means[idx]
                     
     def encodeDatos(datos):
+        '''
+            INPUT
+                datos: numpy array
+            
+            OUTPUT
+                numpy array
+            
+            DESCRIPTION:
+                It computes One-Hot encoding of the X matrix, i.e., it computes One-Hot encoding of features.
+        '''
         X = datos[:,:-1] # all rows, all columns but last one
         Y = datos[:,-1]  # all rows, just last column (class)
 

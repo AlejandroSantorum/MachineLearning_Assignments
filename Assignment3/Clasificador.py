@@ -458,6 +458,10 @@ class AlgoritmoGenetico(Clasificador):
 
 
     def __init_population(self):
+        '''
+            It generates a random initial population, based on maximum number of rules per
+            individual, population size, and rules length.
+        '''
         # Creating initial population of size 'self.n-population'
         for i in range(self.n_population):
             # Creating a new individual, represented as a list of rules
@@ -480,6 +484,11 @@ class AlgoritmoGenetico(Clasificador):
 
     @staticmethod
     def __clf_example(individual, example, diccionario):
+        '''
+            Given an example and an individual, it computes the predicted class for the example.
+            It returns -1 if the number of rules predicting class 1 is the same than the number
+            of rules predicting class 0. In addiction, it returns None if zero rules are activated.
+        '''
         n_feat = len(diccionario)-1 # number of features. Last dictionary is the class dict
         # Keeping track of predicted class by each rule
         predicted_classes = []
@@ -522,6 +531,9 @@ class AlgoritmoGenetico(Clasificador):
 
     
     def __fitness(self, individual, xdata, ydata, diccionario):
+        '''
+            Given an individual, it computes its fitness, looping through the entire train set
+        '''
         n_examples, feat_size = xdata.shape # number of examples and length of each rule (after oneHotEncode)
 
         n_hits = 0 # number of training examples classified correctly by given individual
@@ -543,6 +555,9 @@ class AlgoritmoGenetico(Clasificador):
 
     
     def __calculate_population_fitness(self, xdata, ydata, diccionario):
+        '''
+            It computes the fitness of each individual of the population
+        '''
         fitness_list = []
 
         for individual in self.population:
@@ -552,6 +567,9 @@ class AlgoritmoGenetico(Clasificador):
 
 
     def __elitism(self, fitness_list, n_elite_inds=None):
+        '''
+            It gets the best percentage of individuals, based on its fitness
+        '''
         elite = []
 
         if n_elite_inds:
@@ -586,6 +604,9 @@ class AlgoritmoGenetico(Clasificador):
 
     
     def __parent_selection(self, fitness_list, n_elite_inds=None):
+        '''
+            Parent selection proportional to fitness
+        '''
         # number of individuals that gets to next generation directly by elitism
         elite_size = math.floor(self.elite_perc * len(self.population))
 
@@ -603,6 +624,10 @@ class AlgoritmoGenetico(Clasificador):
 
     
     def __crossover(self, parents, inter_rule_cross=False):
+        '''
+            It computes the crossover (intra or itner-rule crossover) of a set of parents.
+            It considers that the parents are already sorted in the parents list.
+        '''
         descendents = [] # list of descendets after crossovers
 
         n_inds = len(parents) # number of parents
@@ -653,7 +678,12 @@ class AlgoritmoGenetico(Clasificador):
         return descendents
 
   
+
     def __uniform_crossover(self, parents, xdata, ydata, diccionario):
+        '''
+            It computes crossover (uniform + tournament selection) of a set of parents.
+            It considers that the parents are already sorted in the parents list.
+        '''
         descendents = [] # list of descendets after crossovers
 
         n_inds = len(parents) # number of parents
@@ -728,7 +758,11 @@ class AlgoritmoGenetico(Clasificador):
         return descendents
 
 
+
     def __mutation_bitflip(self, parents):
+        '''
+            It computes mutation by bitflip given a bitflip probability (for each bit).
+        '''
         for individual in parents:
             for rule in individual:
                 for bit in rule:
@@ -740,8 +774,12 @@ class AlgoritmoGenetico(Clasificador):
 
         return parents
 
+
   
     def __mutation_add_delete_rule(self, parents):
+        '''
+            It computes mutation by adding/deleting some rule given a certain probability.
+        '''
         for individual in parents:
             add_del = np.random.choice([1,-1, 0], p=[self.add_rule_prob, self.add_rule_prob, 1-2*self.add_rule_prob])
             if add_del==1 and len(individual)<self.max_rules: # Adding new rule
@@ -760,12 +798,20 @@ class AlgoritmoGenetico(Clasificador):
 
     
     def __mutation(self, parents):
+        '''
+            This function, given a set of parents, executes both types of mutation sequentially.
+        '''
         descendents = self.__mutation_bitflip(parents)
         descendents = self.__mutation_add_delete_rule(descendents)
         return descendents
 
 
     def __survivor_selection(self, parents, elite_inds):
+        '''
+            This function concatenates two lists, in order to get final descendents.
+            Survivor selection is considered to be the union of crossed/mutated descendents
+            plus the elite individuals.
+        '''
         # elite individuals get to next generation directly
         return parents + elite_inds
 
