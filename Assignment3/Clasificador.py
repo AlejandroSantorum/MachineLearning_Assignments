@@ -884,7 +884,7 @@ class AlgoritmoGenetico(Clasificador):
         for example in xdata:
             predicted_class = AlgoritmoGenetico.__clf_example(self.best_solution, example, diccionario)
 
-            if predicted_class is None:
+            if predicted_class is None: # list of votes is empty
                 pred.append(-1)
             elif predicted_class == -1: # same number of votes
                 pred.append(self.max_prior)
